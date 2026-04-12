@@ -3,6 +3,10 @@
   top: 0;
   width: 100%;
   background: hsla(30, 20%, 98%, 0.85);
+}
+
+:global(.dark) .header {
+  background: hsla(25, 30%, 8%, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--border);
   z-index: 50;

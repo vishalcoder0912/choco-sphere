@@ -1,0 +1,649 @@
+.page {
+  min-height: 100vh;
+  background: var(--background);
+  position: relative;
+}
+
+.hero {
+  padding-top: 80px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroBackground {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, hsl(25, 45%, 25%, 0.08), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 20%, hsl(45, 90%, 60%, 0.08), transparent),
+    radial-gradient(ellipse 60% 50% at 20% 80%, hsl(25, 35%, 40%, 0.06), transparent);
+  pointer-events: none;
+}
+
+.heroParticles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+  animation: particle-float linear infinite;
+}
+
+.particle:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; }
+.particle:nth-child(2) { left: 20%; animation-duration: 10s; animation-delay: 2s; }
+.particle:nth-child(3) { left: 35%; animation-duration: 14s; animation-delay: 1s; }
+.particle:nth-child(4) { left: 50%; animation-duration: 11s; animation-delay: 3s; }
+.particle:nth-child(5) { left: 65%; animation-duration: 13s; animation-delay: 0.5s; }
+.particle:nth-child(6) { left: 80%; animation-duration: 9s; animation-delay: 4s; }
+.particle:nth-child(7) { left: 90%; animation-duration: 15s; animation-delay: 2.5s; }
+.particle:nth-child(8) { left: 45%; animation-duration: 10s; animation-delay: 1.5s; }
+
+.heroContent {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.heroTagline {
+  display: inline-block;
+  font-size: 0.875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid var(--gold);
+  border-radius: 2rem;
+  font-weight: 500;
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+.heroTitle {
+  font-size: 2.75rem;
+  font-family: var(--font-serif);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, var(--chocolate), var(--gold), var(--chocolate-light));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 4s ease-in-out infinite;
+  line-height: 1.1;
+}
+
+.heroSubtitle {
+  font-size: 1.125rem;
+  color: var(--muted-foreground);
+  margin-bottom: 2.5rem;
+  line-height: 1.75;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heroActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.heroCta,
+.ctaButton,
+.accountPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--chocolate-dark);
+  padding: 1rem 2.5rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: var(--shadow-gold);
+  transition: var(--transition-spring);
+  border: none;
+}
+
+.heroCtaSecondary,
+.accountSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--foreground);
+  padding: 1rem 2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  border: 2px solid var(--border);
+  transition: var(--transition-smooth);
+}
+
+.heroCtaSecondary:hover,
+.accountSecondary:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: hsl(45, 90%, 60%, 0.05);
+}
+
+.marqueeSection {
+  padding: 1.5rem 0;
+  background: linear-gradient(135deg, var(--chocolate-dark), var(--chocolate));
+  overflow: hidden;
+  position: relative;
+}
+
+.marqueeTrack {
+  display: flex;
+  gap: 3rem;
+  animation: marquee 20s linear infinite;
+  width: max-content;
+}
+
+.marqueeItem {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.marqueeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+.statusSection,
+.section,
+.featuresSection,
+.accountSection,
+.ordersWrap,
+.testimonialsSection,
+.storySection,
+.ctaBanner {
+  padding: 5rem 1rem;
+}
+
+.statusGrid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.statusCard {
+  padding: 1.4rem;
+  border-radius: 1.3rem;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, hsl(45, 90%, 60%, 0.06), transparent 55%),
+    var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.statusLabel,
+.accountKicker {
+  display: inline-block;
+  color: var(--gold-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.55rem;
+}
+
+.statusValue {
+  display: block;
+  font-size: 1.5rem;
+  font-family: var(--font-serif);
+  margin-bottom: 0.55rem;
+}
+
+.statusMuted,
+.accountText,
+.catalogState,
+.catalogNotice {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+
+.sectionDivider {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  margin: 0 auto 1rem;
+  border-radius: 2px;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-family: var(--font-serif);
+  text-align: center;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--chocolate), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.sectionSubtitle {
+  text-align: center;
+  color: var(--muted-foreground);
+  margin-bottom: 3rem;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.catalogToolbar {
+  max-width: 1280px;
+  margin: 0 auto 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.searchField input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+  font-size: 1rem;
+}
+
+.categoryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.categoryButton,
+.categoryActive {
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-weight: 700;
+  transition: var(--transition-smooth);
+}
+
+.categoryButton {
+  background: transparent;
+  color: var(--foreground);
+}
+
+.categoryActive {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--chocolate-dark);
+  border-color: transparent;
+  box-shadow: var(--shadow-gold);
+}
+
+.catalogState,
+.catalogNotice {
+  max-width: 1280px;
+  margin: 0 auto 1rem;
+}
+
+.catalogNotice {
+  color: var(--gold-dark);
+  font-weight: 600;
+}
+
+.productsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.catalogEmpty {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  border: 1px dashed var(--border);
+  text-align: center;
+  color: var(--muted-foreground);
+  display: grid;
+  gap: 0.5rem;
+  place-items: center;
+}
+
+.featuresSection {
+  background: linear-gradient(180deg, var(--background), var(--secondary), var(--background));
+}
+
+.featuresGrid,
+.testimonialsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.featureCard,
+.testimonialCard,
+.story,
+.accountCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.featureCard {
+  padding: 2.5rem 2rem;
+  text-align: center;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.featureCard:hover,
+.testimonialCard:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-elevated);
+}
+
+.featureIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(45, 90%, 60%, 0.15), hsl(25, 45%, 25%, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: var(--gold);
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.featureText {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.accountCard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.2rem;
+  background:
+    radial-gradient(circle at top right, hsl(45, 90%, 60%, 0.14), transparent 30%),
+    linear-gradient(135deg, hsl(25, 45%, 25%, 0.03), transparent 45%),
+    var(--card);
+}
+
+.accountTitle {
+  font-size: 2.1rem;
+  max-width: 720px;
+  margin-bottom: 1rem;
+}
+
+.accountText {
+  max-width: 760px;
+  margin-bottom: 1.5rem;
+}
+
+.accountActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.testimonialsSection {
+  position: relative;
+}
+
+.testimonialCard {
+  padding: 2rem;
+}
+
+.testimonialQuote {
+  font-size: 2rem;
+  color: var(--gold);
+  font-family: var(--font-serif);
+  line-height: 1;
+  margin-bottom: 0.75rem;
+}
+
+.testimonialText {
+  color: var(--muted-foreground);
+  font-style: italic;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+.testimonialAuthor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.testimonialAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--chocolate-dark);
+}
+
+.testimonialName {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.testimonialRole {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.storySection {
+  background: linear-gradient(180deg, var(--background), var(--secondary));
+}
+
+.story {
+  padding: 3rem 2rem;
+  max-width: 820px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.story::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+}
+
+.storyTitle {
+  font-size: 1.75rem;
+  font-family: var(--font-serif);
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, var(--chocolate), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.storyText {
+  color: var(--muted-foreground);
+  line-height: 1.9;
+  font-size: 1.05rem;
+}
+
+.ctaBanner {
+  background: linear-gradient(135deg, var(--chocolate-dark), var(--chocolate), var(--chocolate-light));
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ctaBanner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, hsl(45, 90%, 60%, 0.12), transparent);
+  pointer-events: none;
+}
+
+.ctaContent {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: 2rem;
+  font-family: var(--font-serif);
+  color: var(--gold-light);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.ctaText {
+  color: hsl(30, 25%, 75%);
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+.footer {
+  padding: 3rem 1rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+.footerLogo {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.75rem;
+}
+
+.footerText {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (min-width: 640px) {
+  .statusGrid,
+  .featuresGrid,
+  .testimonialsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .heroTitle {
+    font-size: 4rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1.25rem;
+  }
+
+  .statusSection,
+  .section,
+  .featuresSection,
+  .accountSection,
+  .ordersWrap,
+  .testimonialsSection,
+  .storySection,
+  .ctaBanner {
+    padding: 6rem 2rem;
+  }
+
+  .sectionTitle,
+  .ctaTitle {
+    font-size: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statusGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

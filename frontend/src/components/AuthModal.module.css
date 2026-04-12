@@ -1,0 +1,176 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: hsla(25, 30%, 8%, 0.65);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 120;
+}
+
+.modal {
+  width: min(520px, 100%);
+  background:
+    radial-gradient(circle at top right, hsl(45, 90%, 60%, 0.15), transparent 35%),
+    var(--card);
+  border: 1px solid hsl(45, 90%, 60%, 0.18);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-elevated);
+  padding: 2rem;
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: hsl(45, 90%, 60%, 0.12);
+  color: var(--gold-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.toggleButton,
+.toggleActive {
+  height: 44px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  transition: var(--transition-smooth);
+}
+
+.toggleButton {
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.toggleActive {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--chocolate-dark);
+  box-shadow: var(--shadow-gold);
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0 1rem;
+  background: hsl(0, 0%, 100%, 0.65);
+  height: 52px;
+}
+
+:global(.dark) .inputWrap {
+  background: hsl(25, 30%, 12%);
+}
+
+.inputIcon {
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+  font-size: 1rem;
+}
+
+.submitButton {
+  margin-top: 0.5rem;
+  height: 54px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--chocolate), var(--chocolate-light));
+  color: var(--primary-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-luxury);
+}
+
+.submitButton:disabled {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+.spinner {
+  animation: rotate 0.9s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+}

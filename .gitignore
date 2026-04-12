@@ -6,11 +6,25 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+frontend-dev.log
+frontend-dev.err.log
+backend-dev.log
+backend-dev.err.log
 
+# Dependencies and build outputs
 node_modules
-dist
-dist-ssr
+frontend/node_modules
+backend/node_modules
+frontend/dist
+frontend/dist-ssr
+
+# Local environment files
 *.local
+frontend/.env
+backend/.env
+
+# Temporary legacy folder during repo split
+server/
 
 # Editor directories and files
 .vscode/*

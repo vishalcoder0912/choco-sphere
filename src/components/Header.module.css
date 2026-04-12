@@ -149,6 +149,79 @@
   background: hsl(45, 90%, 60%, 0.08);
 }
 
+/* Mobile overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: hsla(25, 30%, 8%, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+}
+
+/* Mobile slide-out nav */
+.mobileNav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 280px;
+  height: 100vh;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 40px hsla(25, 30%, 8%, 0.2);
+}
+
+.mobileNavHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobileNavLogo {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mobileNavLinks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+}
+
+.mobileNavLink {
+  display: block;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  transition: var(--transition-smooth);
+  border-left: 3px solid transparent;
+}
+
+.mobileNavLink:hover {
+  background: hsl(45, 90%, 60%, 0.06);
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+
+.mobileNavFooter {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.mobileNavFooterText {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
 @media (min-width: 768px) {
   .logo {
     font-size: 1.75rem;

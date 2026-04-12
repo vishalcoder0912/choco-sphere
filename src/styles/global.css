@@ -2,59 +2,49 @@
    GLOBAL STYLES - NO TAILWIND
    ============================================ */
 
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* CSS Variables for Design System */
 :root {
-  /* Luxury Chocolate Color Palette */
   --background: hsl(30, 20%, 98%);
   --foreground: hsl(25, 40%, 15%);
-  
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(25, 40%, 15%);
-  
-  /* Rich chocolate primary */
   --primary: hsl(25, 45%, 25%);
   --primary-foreground: hsl(30, 25%, 95%);
-  
-  /* Warm cream secondary */
   --secondary: hsl(35, 40%, 90%);
   --secondary-foreground: hsl(25, 40%, 15%);
-  
-  /* Soft muted tones */
   --muted: hsl(30, 30%, 92%);
   --muted-foreground: hsl(25, 20%, 45%);
-  
-  /* Gold accent */
   --accent: hsl(45, 90%, 60%);
   --accent-foreground: hsl(25, 40%, 15%);
-  
   --destructive: hsl(0, 84.2%, 60.2%);
   --border: hsl(30, 25%, 88%);
   --input: hsl(30, 25%, 88%);
   --ring: hsl(45, 90%, 60%);
-  
   --radius: 0.75rem;
-  
-  /* Custom luxury tokens */
+
   --gold: hsl(45, 90%, 60%);
   --gold-light: hsl(45, 95%, 75%);
+  --gold-dark: hsl(40, 80%, 45%);
   --chocolate: hsl(25, 45%, 25%);
   --chocolate-light: hsl(25, 35%, 40%);
-  
-  /* Shadows */
+  --chocolate-dark: hsl(25, 50%, 15%);
+
   --shadow-luxury: 0 10px 40px -10px hsl(25, 45%, 25%, 0.3);
   --shadow-gold: 0 5px 20px hsl(45, 90%, 60%, 0.4);
   --shadow-card: 0 4px 20px hsl(25, 20%, 20%, 0.08);
-  
-  /* Transitions */
+  --shadow-elevated: 0 20px 60px -15px hsl(25, 45%, 25%, 0.25);
+
   --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  
-  /* Fonts */
+  --transition-spring: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
 }
 
-/* Dark Mode */
 .dark {
   --background: hsl(25, 30%, 8%);
   --foreground: hsl(30, 25%, 95%);
@@ -73,7 +63,6 @@
   --gold-light: hsl(45, 95%, 75%);
 }
 
-/* Global Reset */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -83,6 +72,7 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -113,18 +103,22 @@ button {
   cursor: pointer;
 }
 
-/* Utility Classes */
-.container {
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 1rem;
+/* Selection */
+::selection {
+  background: var(--gold);
+  color: var(--chocolate-dark);
 }
 
-@media (min-width: 768px) {
-  .container {
-    padding: 0 2rem;
-  }
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--gold), var(--chocolate-light));
+  border-radius: 4px;
 }
 
 /* Animations */
@@ -140,7 +134,7 @@ button {
 
 @keyframes glow {
   0%, 100% { box-shadow: 0 0 20px var(--gold); }
-  50% { box-shadow: 0 0 40px var(--gold); }
+  50% { box-shadow: 0 0 40px var(--gold), 0 0 60px var(--gold-light); }
 }
 
 @keyframes slideIn {
@@ -151,4 +145,37 @@ button {
 @keyframes fadeIn {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+}
+
+@keyframes text-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: var(--gold); }
+  50% { border-color: var(--gold-light); }
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }

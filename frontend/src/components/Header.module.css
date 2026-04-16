@@ -2,12 +2,8 @@
   position: fixed;
   top: 0;
   width: 100%;
-  background: hsla(30, 20%, 98%, 0.85);
-}
-
-:global(.dark) .header {
-  background: hsla(25, 30%, 8%, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: hsla(0, 0%, 4%, 0.95);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   z-index: 50;
   transition: var(--transition-smooth);
@@ -31,19 +27,18 @@
 
 .logo {
   font-size: 1.5rem;
-  font-family: var(--font-serif);
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--foreground);
+  letter-spacing: 0.15em;
   cursor: pointer;
   transition: var(--transition-smooth);
-  letter-spacing: -0.02em;
+  text-shadow: 0 0 10px var(--noir-red);
 }
 
 .logo:hover {
-  transform: scale(1.05);
+  color: var(--noir-red);
+  text-shadow: 0 0 20px var(--noir-red), 0 0 30px var(--noir-red);
 }
 
 .nav {
@@ -52,12 +47,15 @@
 }
 
 .navLink {
-  color: var(--foreground);
+  color: var(--muted-foreground);
   transition: var(--transition-smooth);
   font-weight: 500;
   font-size: 0.9rem;
   position: relative;
   padding-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-display);
 }
 
 .navLink::after {
@@ -67,13 +65,12 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  background: var(--noir-red);
   transition: width 0.3s ease;
-  border-radius: 1px;
 }
 
 .navLink:hover {
-  color: var(--gold);
+  color: var(--noir-red);
 }
 
 .navLink:hover::after {
@@ -105,8 +102,8 @@
 }
 
 .userPill {
-  background: linear-gradient(135deg, hsl(45, 90%, 60%, 0.16), hsl(25, 45%, 25%, 0.08));
-  color: var(--gold-dark);
+  background: rgba(255, 0, 0, 0.1);
+  color: var(--noir-red);
 }
 
 .cartButton {
@@ -120,16 +117,16 @@
 }
 
 .cartButton:hover {
-  color: var(--gold);
-  background: hsl(45, 90%, 60%, 0.08);
+  color: var(--noir-red);
+  background: rgba(255, 0, 0, 0.1);
 }
 
 .cartBadge {
   position: absolute;
   top: -2px;
   right: -2px;
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
-  color: var(--chocolate-dark);
+  background: var(--noir-red);
+  color: white;
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -138,7 +135,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: 0 2px 6px hsl(45, 90%, 60%, 0.4);
+  box-shadow: 0 0 10px var(--noir-red);
 }
 
 .menuButton {
@@ -152,7 +149,8 @@
 }
 
 .menuButton:hover {
-  background: hsl(45, 90%, 60%, 0.08);
+  background: rgba(255, 0, 0, 0.1);
+  color: var(--noir-red);
 }
 
 .themeButton {
@@ -168,15 +166,15 @@
 }
 
 .themeButton:hover {
-  color: var(--gold);
-  background: hsl(45, 90%, 60%, 0.08);
+  color: var(--noir-red);
+  background: rgba(255, 0, 0, 0.1);
 }
 
 /* Mobile overlay */
 .overlay {
   position: fixed;
   inset: 0;
-  background: hsla(25, 30%, 8%, 0.5);
+  background: hsla(0, 0%, 0%, 0.8);
   backdrop-filter: blur(4px);
   z-index: 90;
 }
@@ -189,11 +187,11 @@
   width: 280px;
   height: 100vh;
   background: var(--card);
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--noir-red);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: -10px 0 40px hsla(25, 30%, 8%, 0.2);
+  box-shadow: -10px 0 40px rgba(255, 0, 0, 0.2);
 }
 
 .mobileNavHeader {
@@ -202,9 +200,13 @@
 }
 
 .mobileNavLogo {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--foreground);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 10px var(--noir-red);
+}
   background: linear-gradient(135deg, var(--gold), var(--gold-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

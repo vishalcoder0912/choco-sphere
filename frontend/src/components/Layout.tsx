@@ -112,9 +112,9 @@ export const Layout = () => {
         <Outlet />
       </main>
 
-      <footer style={{ padding: "3rem", textAlign: "center", borderTop: "1px solid var(--border)", marginTop: "auto", background: "var(--background)", zIndex: 10 }}>
-        <div style={{ fontWeight: 600, marginBottom: "0.5rem", fontSize: "1.25rem" }}>ChocoVerse</div>
-        <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>© 2026 ChocoVerse. Crafted with love and cocoa.</p>
+      <footer style={{ padding: "3rem", textAlign: "center", borderTop: "1px solid var(--noir-red)", marginTop: "auto", background: "var(--background)", zIndex: 10 }}>
+        <div style={{ fontWeight: 400, marginBottom: "0.5rem", fontSize: "1.5rem", fontFamily: "var(--font-display)", letterSpacing: "0.15em", textShadow: "0 0 10px var(--noir-red)" }}>NOIRSANE</div>
+        <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem", fontStyle: "italic" }}>Enter the shadows. All rights reserved.</p>
       </footer>
     </div>
   );

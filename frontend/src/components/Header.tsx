@@ -35,7 +35,7 @@ export const Header = ({ isAuthenticated, isAdmin, userName, onOpenCart, onOpenA
               className={styles.logo}
               whileHover={{ scale: 1.05 }}
             >
-              ChocoVerse
+              NOIRSANE
             </motion.h1>
             <nav className={styles.nav}>
               <Link to="/" className={styles.navLink}>Home</Link>
@@ -155,7 +155,7 @@ export const Header = ({ isAuthenticated, isAdmin, userName, onOpenCart, onOpenA
               transition={{ type: 'spring', damping: 26, stiffness: 300 }}
             >
               <div className={styles.mobileNavHeader}>
-                <span className={styles.mobileNavLogo}>ChocoVerse</span>
+                <span className={styles.mobileNavLogo}>NOIRSANE</span>
               </div>
               <div className={styles.mobileNavLinks}>
                 {[

@@ -1,310 +1,404 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Package, RefreshCw, ChevronDown, ChevronUp, Truck, CreditCard, Smartphone, Search, Filter,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Trash2, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { type Order } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { apiClient, type Order } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#f59e0b",
-  PAID: "#10b981",
-  SHIPPED: "#3b82f6",
-  DELIVERED: "#8b5cf6",
-  CANCELLED: "#ef4444",
+const formatINR = (cents: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+
+const STATUSES: Order["status"][] = [
+  "PENDING",
+  "PAID",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+];
+
+const STATUS_VARIANT: Record<Order["status"], string> = {
+  PENDING: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30 dark:text-yellow-400",
+  PAID: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
+  SHIPPED: "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400",
+  DELIVERED: "bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400",
+  CANCELLED: "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400",
 };
 
-const OrdersPage = () => {
-  const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+const Orders = () => {
+  const { token } = useAuthStore();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"ALL" | Order["status"]>("ALL");
+  const [viewing, setViewing] = useState<Order | null>(null);
+  const [deleting, setDeleting] = useState<Order | null>(null);
 
-  const { data: orders = [], isLoading, refetch } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/orders`, {
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) throw new Error("Failed to fetch orders");
-      const data = await response.json();
-      return data.data || [];
-    },
+  const {
+    data: orders = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: ["admin", "orders"],
+    queryFn: () => apiClient.adminGetOrders(token as string),
+    enabled: Boolean(token),
   });
 
-  const statusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/orders/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) throw new Error("Failed to update status");
-      return response.json();
-    },
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      apiClient.adminUpdateOrderStatus(token as string, id, status),
     onSuccess: () => {
-      toast.success("Order status updated!");
-      refetch();
+      toast.success("Order status updated");
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
-    onError: () => toast.error("Failed to update status"),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchesSearch =
-        !searchTerm ||
-        order.id.toString().includes(searchTerm) ||
-        ((order as any).user?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ((order as any).user?.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+  const removeOrder = useMutation({
+    mutationFn: (id: number) => apiClient.adminDeleteOrder(token as string, id),
+    onSuccess: () => {
+      toast.success("Order deleted");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [orders, searchTerm, statusFilter]);
-
-  const orderStats = useMemo(() => {
-    return {
-      total: orders.length,
-      pending: orders.filter((o) => o.status === "PENDING").length,
-      paid: orders.filter((o) => o.status === "PAID").length,
-      shipped: orders.filter((o) => o.status === "SHIPPED").length,
-      delivered: orders.filter((o) => o.status === "DELIVERED").length,
-      cancelled: orders.filter((o) => o.status === "CANCELLED").length,
-    };
-  }, [orders]);
-
-  if (isLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "var(--muted-foreground)" }}>
-        <RefreshCw size={24} style={{ animation: "spin 1s linear infinite", margin: "0 auto 1rem" }} />
-        <p>Loading all orders...</p>
-      </div>
-    );
-  }
-
-  if (orders.length === 0) {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "var(--muted-foreground)" }}>
-        <Package size={48} style={{ margin: "0 auto 1rem", opacity: 0.4 }} />
-        <p>No orders found.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Orders</h2>
-          <span style={{
-            padding: "0.25rem 0.625rem",
-            background: "#f59e0b22",
-            color: "#f59e0b",
-            borderRadius: "99px",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-          }}>
-            Demo Data
-          </span>
-        </div>
-        <p style={{ color: "var(--muted-foreground)", margin: 0 }}>Manage and track all customer orders · <strong>Note:</strong> These are fake/demo products for demonstration purposes</p>
-      </div>
-
-      {/* Order Statistics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {Object.entries(orderStats).map(([key, value]) => (
-          <div key={key} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "0.75rem", padding: "1rem", textAlign: "center" }}>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.25rem" }}>{value}</div>
-            <div style={{ fontSize: "0.8rem", color: "var(--muted-foreground)", textTransform: "capitalize" }}>{key}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Search and Filter */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: "250px" }}>
-          <div style={{ position: "relative" }}>
-            <Search size={16} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)" }} />
-            <input
-              type="text"
-              placeholder="Search by order ID, name, or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.65rem 0.9rem 0.65rem 2.5rem",
-                background: "var(--background)",
-                color: "var(--foreground)",
-                border: "1px solid var(--border)",
-                borderRadius: "0.5rem",
-                fontSize: "0.9rem",
-              }}
-            />
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Filter size={16} style={{ color: "var(--muted-foreground)" }} />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: "0.65rem 0.9rem",
-              background: "var(--background)",
-              color: "var(--foreground)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.5rem",
-              fontSize: "0.9rem",
-              cursor: "pointer",
-            }}
-          >
-            <option value="all">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="PAID">Paid</option>
-            <option value="SHIPPED">Shipped</option>
-            <option value="DELIVERED">Delivered</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-          {filteredOrders.length} of {orders.length} order{orders.length !== 1 ? "s" : ""}
-        </p>
-        {filteredOrders.map((order) => (
-          <OrderRow
-            key={order.id}
-            order={order}
-            expanded={expandedOrder === order.id}
-            onToggle={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-            onStatusChange={(status) => statusMutation.mutate({ orderId: order.id, status })}
-            statusPending={statusMutation.isPending}
-          />
-        ))}
-        {filteredOrders.length === 0 && orders.length > 0 && (
-          <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted-foreground)" }}>
-            No orders match your search or filter criteria.
-          </div>
-        )}
-      </div>
-    </div>
+  const filtered = useMemo(
+    () =>
+      orders.filter((o) => {
+        const matchesStatus = filter === "ALL" || o.status === filter;
+        const q = search.trim().toLowerCase();
+        const matchesSearch =
+          !q ||
+          String(o.id).includes(q) ||
+          (o.user?.name ?? "").toLowerCase().includes(q) ||
+          (o.user?.email ?? "").toLowerCase().includes(q);
+        return matchesStatus && matchesSearch;
+      }),
+    [orders, filter, search]
   );
-};
-
-const OrderRow = ({
-  order,
-  expanded,
-  onToggle,
-  onStatusChange,
-  statusPending,
-}: {
-  order: Order;
-  expanded: boolean;
-  onToggle: () => void;
-  onStatusChange: (status: string) => void;
-  statusPending: boolean;
-}) => {
-  const paymentIcon = order.paymentMethod === "UPI" ? <Smartphone size={14} /> : <CreditCard size={14} />;
-  const statusColor = STATUS_COLORS[order.status] ?? "#888";
 
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "0.875rem", overflow: "hidden" }}>
-      <button
-        onClick={onToggle}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", gap: "1rem",
-          padding: "1rem 1.25rem", background: "none", border: "none",
-          cursor: "pointer", textAlign: "left", color: "var(--foreground)",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem" }}>Order #{order.id}</p>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted-foreground)" }}>
-            {(order as any).user?.name} · {(order as any).user?.email}
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight">
+            Orders
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {orders.length} total · {filtered.length} shown
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--muted-foreground)", fontSize: "0.8rem" }}>
-          {paymentIcon}
-          <span>{order.paymentMethod || "N/A"}</span>
-        </div>
-        <span style={{ fontWeight: 700, fontSize: "0.95rem" }}>₹{(order.totalAmount / 100).toFixed(2)}</span>
-        <span style={{
-          padding: "0.25rem 0.625rem", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 600,
-          background: `${statusColor}22`, color: statusColor,
-        }}>
-          {order.status}
-        </span>
-        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw className={cn("w-4 h-4 mr-2", isFetching && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
 
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ overflow: "hidden" }}
-          >
-            <div style={{ borderTop: "1px solid var(--border)", padding: "1.25rem", display: "grid", gap: "1.25rem" }}>
-              <div>
-                <h4 style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.75rem", color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Items</h4>
-                {order.items.map((item) => (
-                  <div key={item.id} style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "0.5rem" }}>
-                    <img src={item.product.image} alt={item.product.name} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "0.375rem" }} />
-                    <span style={{ fontSize: "0.9rem" }}>{item.product.name}</span>
-                    <span style={{ color: "var(--muted-foreground)", fontSize: "0.85rem", marginLeft: "auto" }}>×{item.quantity}</span>
-                  </div>
+      <Card>
+        <CardContent className="p-4 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by order ID, name, or email…"
+              className="pl-9"
+            />
+          </div>
+          <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+            <SelectTrigger className="md:w-48">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All statuses</SelectItem>
+              {STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead className="hidden md:table-cell">Date</TableHead>
+                <TableHead className="hidden sm:table-cell">Items</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={7}>
+                      <Skeleton className="h-6 w-full" />
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
+              {!isLoading && filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    No orders match your filters.
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading &&
+                filtered.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">#{order.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{order.user?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {order.user?.email ?? "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                      {order.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString("en-IN")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm">
+                      {order.items.length}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={order.status}
+                        onValueChange={(v) =>
+                          updateStatus.mutate({ id: order.id, status: v })
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-32 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUSES.map((s) => (
+                            <SelectItem key={s} value={s} className="text-xs">
+                              <Badge
+                                variant="outline"
+                                className={cn("border mr-1", STATUS_VARIANT[s])}
+                              >
+                                {s}
+                              </Badge>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {formatINR(order.totalAmount)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setViewing(order)}
+                          aria-label="View order"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleting(order)}
+                          aria-label="Delete order"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div style={{ background: "var(--background)", padding: "0.875rem", borderRadius: "0.5rem", border: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", marginBottom: "0.5rem", color: "var(--muted-foreground)", fontSize: "0.8rem", fontWeight: 600 }}>
-                    <Truck size={13} /> SHIPPING ADDRESS
-                  </div>
-                  <p style={{ margin: 0, fontSize: "0.875rem" }}>{order.shippingAddress || "—"}</p>
+      {/* View order sheet */}
+      <Sheet open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {viewing && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Order #{viewing.id}</SheetTitle>
+                <SheetDescription>
+                  Placed{" "}
+                  {viewing.createdAt
+                    ? new Date(viewing.createdAt).toLocaleString("en-IN")
+                    : "—"}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-5">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                    Customer
+                  </p>
+                  <p className="font-medium">{viewing.user?.name ?? "—"}</p>
+                  <p className="text-sm text-muted-foreground">{viewing.user?.email}</p>
                 </div>
 
-                <div style={{ background: "var(--background)", padding: "0.875rem", borderRadius: "0.5rem", border: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", marginBottom: "0.5rem", color: "var(--muted-foreground)", fontSize: "0.8rem", fontWeight: 600 }}>
-                    {paymentIcon} PAYMENT
+                <Separator />
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                    Items
+                  </p>
+                  <div className="space-y-2">
+                    {viewing.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 rounded-md border p-2"
+                      >
+                        <img
+                          src={item.product.image}
+                          alt={item.product.name}
+                          className="w-12 h-12 rounded object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {item.product.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatINR(item.product.price)} × {item.quantity}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold">
+                          {formatINR(item.product.price * item.quantity)}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                  {order.paymentMethod === "UPI" ? (
-                    <p style={{ margin: 0, fontSize: "0.875rem" }}>
-                      UPI: <strong>{(order.paymentDetails as any)?.upiId || "—"}</strong>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                      Shipping address
                     </p>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: "0.875rem" }}>
-                      {(order.paymentDetails as any)?.cardholderName || "—"} · ****{(order.paymentDetails as any)?.last4 || "—"}
+                    <p className="text-sm">{viewing.shippingAddress || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                      Payment
                     </p>
-                  )}
+                    <p className="text-sm">
+                      {viewing.paymentMethod || "—"}
+                      {viewing.paymentDetails?.upiId && (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {viewing.paymentDetails.upiId}
+                        </span>
+                      )}
+                      {viewing.paymentDetails?.last4 && (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · ****{viewing.paymentDetails.last4}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-xl font-semibold">
+                    {formatINR(viewing.totalAmount)}
+                  </span>
                 </div>
               </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <label style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--muted-foreground)" }}>Update Status:</label>
-                <select
-                  defaultValue={order.status}
-                  onChange={(e) => onStatusChange(e.target.value)}
-                  disabled={statusPending}
-                  style={{
-                    padding: "0.5rem 0.75rem", background: "var(--background)", color: "var(--foreground)",
-                    border: "1px solid var(--border)", borderRadius: "0.375rem", cursor: "pointer",
-                  }}
-                >
-                  {["PENDING", "PAID", "SHIPPED", "DELIVERED", "CANCELLED"].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Delete confirmation */}
+      <AlertDialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete order #{deleting?.id}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the order and all of its line items. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleting && removeOrder.mutate(deleting.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-export default OrdersPage;
+export default Orders;

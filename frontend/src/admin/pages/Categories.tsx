@@ -1,308 +1,249 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Tag, Plus, CheckCircle, Edit2, Trash2, X, Folder } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Pencil, Trash2, FolderTree } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
+import { apiClient, type Category } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const inputStyle: React.CSSProperties = {
-  background: "var(--background)",
-  color: "var(--foreground)",
-  border: "1px solid var(--border)",
-  padding: "0.65rem 0.9rem",
-  borderRadius: "0.5rem",
-  fontSize: "0.9rem",
-  width: "100%",
-  boxSizing: "border-box" as any,
-};
+const Categories = () => {
+  const { token } = useAuthStore();
+  const qc = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [name, setName] = useState("");
+  const [deleting, setDeleting] = useState<Category | null>(null);
 
-const CategoriesPage = () => {
-  const [form, setForm] = useState({ name: "" });
-  const [success, setSuccess] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  const { data: categories = [], isLoading, refetch: refetchCategories } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/categories`, {
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) throw new Error("Failed to fetch categories");
-      const data = await response.json();
-      return data.data || [];
-    },
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ["admin", "categories"],
+    queryFn: () => apiClient.adminGetCategories(token as string),
+    enabled: Boolean(token),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const openCreate = () => {
+    setEditing(null);
+    setName("");
+    setDialogOpen(true);
+  };
+  const openEdit = (c: Category) => {
+    setEditing(c);
+    setName(c.name);
+    setDialogOpen(true);
   };
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name }),
-      });
-      if (!response.ok) throw new Error("Failed to create category");
-      return response.json();
-    },
+  const create = useMutation({
+    mutationFn: (n: string) => apiClient.adminCreateCategory(token as string, n),
     onSuccess: () => {
-      toast.success("Category created successfully!");
-      setSuccess(true);
-      setForm({ name: "" });
-      refetchCategories();
-      setTimeout(() => setSuccess(false), 3000);
+      toast.success("Category created");
+      qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+      setDialogOpen(false);
     },
-    onError: (e: Error) => toast.error(e.message || "Failed to create category"),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/categories/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name }),
-      });
-      if (!response.ok) throw new Error("Failed to update category");
-      return response.json();
-    },
+  const update = useMutation({
+    mutationFn: ({ id, n }: { id: number; n: string }) =>
+      apiClient.adminUpdateCategory(token as string, id, n),
     onSuccess: () => {
-      toast.success("Category updated successfully!");
-      setSuccess(true);
-      resetForm();
-      refetchCategories();
-      setTimeout(() => setSuccess(false), 3000);
+      toast.success("Category updated");
+      qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      setDialogOpen(false);
     },
-    onError: (e: Error) => toast.error(e.message || "Failed to update category"),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (categoryId: number) => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/categories/${categoryId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) throw new Error("Failed to delete category");
-      return response.json();
-    },
+  const remove = useMutation({
+    mutationFn: (id: number) => apiClient.adminDeleteCategory(token as string, id),
     onSuccess: () => {
-      toast.success("Category deleted successfully!");
-      refetchCategories();
+      toast.success("Category deleted");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["admin", "categories"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
-    onError: (e: Error) => toast.error(e.message || "Failed to delete category"),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEditing && editingId) {
-      updateMutation.mutate();
-    } else {
-      createMutation.mutate();
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
     }
-  };
-
-  const handleEdit = (category: any) => {
-    setIsEditing(true);
-    setEditingId(category.id);
-    setForm({ name: category.name });
-  };
-
-  const handleDelete = (categoryId: number) => {
-    if (window.confirm("Are you sure you want to delete this category? This may affect products in this category.")) {
-      deleteMutation.mutate(categoryId);
-    }
-  };
-
-  const resetForm = () => {
-    setForm({ name: "" });
-    setIsEditing(false);
-    setEditingId(null);
+    if (editing) update.mutate({ id: editing.id, n: name.trim() });
+    else create.mutate(name.trim());
   };
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
         <div>
-          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Categories</h2>
-          <p style={{ color: "var(--muted-foreground)", margin: 0 }}>Manage product categories</p>
+          <h1 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight">
+            Categories
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {categories.length} categor{categories.length === 1 ? "y" : "ies"}
+          </p>
         </div>
-        {!isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            style={{
-              padding: "0.625rem 1.25rem",
-              background: "var(--primary)",
-              color: "var(--primary-foreground)",
-              border: "none",
-              borderRadius: "0.5rem",
-              fontWeight: 600,
-              fontSize: "0.9rem",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            <Plus size={16} /> Add Category
-          </button>
-        )}
+        <Button onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-2" /> New category
+        </Button>
       </div>
 
-      <AnimatePresence>
-        {isEditing && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            style={{ marginBottom: "2rem" }}
-          >
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "1rem", padding: "2rem" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Tag size={20} color="var(--primary)" />
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>{editingId ? "Edit Category" : "Add New Category"}</h3>
-                </div>
-                <button
-                  onClick={resetForm}
-                  style={{
-                    padding: "0.5rem",
-                    background: "transparent",
-                    border: "1px solid var(--border)",
-                    borderRadius: "0.375rem",
-                    color: "var(--muted-foreground)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {success && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", background: "#10b98122", borderRadius: "0.5rem", marginBottom: "1rem", color: "#10b981" }}
-                >
-                  <CheckCircle size={16} /> Category {editingId ? "updated" : "created"} successfully!
-                </motion.div>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden sm:table-cell w-32">ID</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading &&
+                Array.from({ length: 4 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={3}>
+                      <Skeleton className="h-8 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!isLoading && categories.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                    <FolderTree className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    No categories yet.
+                  </TableCell>
+                </TableRow>
               )}
+              {!isLoading &&
+                categories.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
+                      #{c.id}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(c)}
+                          aria-label="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleting(c)}
+                          aria-label="Delete"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div>
-                  <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--muted-foreground)", display: "block", marginBottom: "0.35rem" }}>Category Name *</label>
-                  <input required name="name" value={form.name} onChange={handleChange} placeholder="e.g. Dark Chocolate" style={inputStyle} />
-                </div>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit category" : "New category"}</DialogTitle>
+            <DialogDescription>
+              {editing ? "Rename this category." : "Group your products with a new category."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cat-name">Name</Label>
+              <Input
+                id="cat-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Dark Chocolate"
+                autoFocus
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={create.isPending || update.isPending}>
+                {editing
+                  ? update.isPending
+                    ? "Saving…"
+                    : "Save"
+                  : create.isPending
+                  ? "Creating…"
+                  : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  style={{
-                    padding: "0.875rem", background: (createMutation.isPending || updateMutation.isPending) ? "var(--muted)" : "var(--primary)",
-                    color: (createMutation.isPending || updateMutation.isPending) ? "var(--muted-foreground)" : "var(--primary-foreground)",
-                    border: "none", borderRadius: "0.5rem", fontWeight: 600, fontSize: "0.95rem",
-                    cursor: (createMutation.isPending || updateMutation.isPending) ? "not-allowed" : "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
-                    marginTop: "0.25rem",
-                  }}
-                >
-                  <Plus size={16} />
-                  {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : (editingId ? "Update Category" : "Add Category")}
-                </button>
-              </form>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Category List */}
-      {!isEditing && (
-        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "1rem", padding: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
-            <Folder size={20} color="var(--primary)" />
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>Category List</h3>
-          </div>
-
-          {isLoading ? (
-            <div style={{ textAlign: "center", padding: "3rem", color: "var(--muted-foreground)" }}>
-              <div style={{ width: "24px", height: "24px", border: "2px solid var(--border)", borderTopColor: "var(--primary)", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem" }} />
-              <p>Loading categories...</p>
-            </div>
-          ) : categories.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "3rem", color: "var(--muted-foreground)" }}>
-              <Folder size={48} style={{ margin: "0 auto 1rem", opacity: 0.4 }} />
-              <p>No categories yet. Add your first category!</p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {categories.map((category: any) => (
-                <div
-                  key={category.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    padding: "1rem",
-                    background: "var(--background)",
-                    borderRadius: "0.75rem",
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <div style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "0.5rem",
-                    background: "var(--primary)15",
-                    color: "var(--primary)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}>
-                    <Tag size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: "0.95rem" }}>{category.name}</p>
-                    <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--muted-foreground)" }}>
-                      ID: {category.id}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button
-                      onClick={() => handleEdit(category)}
-                      style={{
-                        padding: "0.5rem",
-                        background: "var(--secondary)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "0.375rem",
-                        color: "var(--foreground)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category.id)}
-                      style={{
-                        padding: "0.5rem",
-                        background: "#ef444415",
-                        border: "1px solid #ef4444",
-                        borderRadius: "0.375rem",
-                        color: "#ef4444",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <AlertDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleting?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Categories that still have products cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleting && remove.mutate(deleting.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-export default CategoriesPage;
+export default Categories;

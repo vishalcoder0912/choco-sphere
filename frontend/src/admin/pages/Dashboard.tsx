@@ -1,275 +1,339 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
-  Package, IndianRupee, Users, ShoppingCart, TrendingUp, Clock,
-  ArrowUpRight, ArrowDownRight, RefreshCw
+  IndianRupee,
+  ShoppingBag,
+  Package,
+  FolderTree,
+  Users,
+  Clock,
+  TrendingUp,
+  ArrowUpRight,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+import { useAuthStore } from "@/store/authStore";
+import { apiClient, type Order } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const formatINR = (cents: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+
+const STATUS_VARIANT: Record<Order["status"], string> = {
+  PENDING: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30 dark:text-yellow-400",
+  PAID: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
+  SHIPPED: "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400",
+  DELIVERED: "bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400",
+  CANCELLED: "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400",
+};
+
+const StatCard = ({
+  label,
+  value,
+  icon: Icon,
+  hint,
+  loading,
+}: {
+  label: string;
+  value: string | number;
+  icon: typeof IndianRupee;
+  hint?: string;
+  loading?: boolean;
+}) => (
+  <Card className="overflow-hidden">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1 min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
+          {loading ? (
+            <Skeleton className="h-7 w-24 mt-1" />
+          ) : (
+            <p className="text-2xl font-semibold tracking-tight truncate">{value}</p>
+          )}
+          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        </div>
+        <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <Icon className="w-5 h-5" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const Dashboard = () => {
+  const { token } = useAuthStore();
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: () => apiClient.adminGetStats(token as string),
+    enabled: Boolean(token),
+    refetchInterval: 30000,
+  });
+
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/orders`, {
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response.ok) throw new Error("Failed to fetch orders");
-      const data = await response.json();
-      return data.data || [];
-    },
+    queryKey: ["admin", "orders"],
+    queryFn: () => apiClient.adminGetOrders(token as string),
+    enabled: Boolean(token),
   });
 
-  const { data: pendingPayments = [], isLoading: paymentsLoading } = useQuery({
-    queryKey: ["pending-payments"],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/pending-payments`, {
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) return [];
-        const data = await response.json();
-        return data.data || [];
-      } catch {
-        return [];
-      }
-    },
-  });
+  const recentOrders = useMemo(() => orders.slice(0, 6), [orders]);
 
-  // Calculate analytics
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-  const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
-  const completedOrders = orders.filter((o) => o.status === "DELIVERED").length;
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-  const statCards = [
-    {
-      title: "Total Revenue",
-      value: `₹${(totalRevenue / 100).toLocaleString()}`,
-      icon: <IndianRupee size={24} />,
-      color: "#10b981",
-      trend: "+12.5%",
-      trendUp: true,
-    },
-    {
-      title: "Total Orders",
-      value: totalOrders.toString(),
-      icon: <ShoppingCart size={24} />,
-      color: "#3b82f6",
-      trend: "+8.2%",
-      trendUp: true,
-    },
-    {
-      title: "Pending Orders",
-      value: pendingOrders.toString(),
-      icon: <Clock size={24} />,
-      color: "#f59e0b",
-      trend: "-3.1%",
-      trendUp: false,
-    },
-    {
-      title: "Completed Orders",
-      value: completedOrders.toString(),
-      icon: <Package size={24} />,
-      color: "#8b5cf6",
-      trend: "+15.3%",
-      trendUp: true,
-    },
-  ];
-
-  if (ordersLoading || paymentsLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "var(--muted-foreground)" }}>
-        <RefreshCw size={24} style={{ animation: "spin 1s linear infinite", margin: "0 auto 1rem" }} />
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
+  const chartData = useMemo(
+    () =>
+      (stats?.trend ?? []).map((d) => ({
+        ...d,
+        revenueRupees: d.revenue / 100,
+        label: new Date(d.date).toLocaleDateString("en-IN", {
+          month: "short",
+          day: "numeric",
+        }),
+      })),
+    [stats]
+  );
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <h2 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>Dashboard</h2>
-        <p style={{ color: "var(--muted-foreground)", margin: "0.5rem 0 0" }}>
-          Overview of your store performance and recent activity
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Live overview of your store performance.
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "2.5rem" }}>
-        {statCards.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            style={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: "1rem",
-              padding: "1.5rem",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-              <div style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "12px",
-                background: `${stat.color}15`,
-                color: stat.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                {stat.icon}
-              </div>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.25rem",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                color: stat.trendUp ? "#10b981" : "#ef4444",
-              }}>
-                {stat.trendUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                {stat.trend}
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <StatCard
+          label="Revenue"
+          value={stats ? formatINR(stats.totalRevenue) : "—"}
+          icon={IndianRupee}
+          loading={statsLoading}
+          hint="Excludes cancelled"
+        />
+        <StatCard
+          label="Orders"
+          value={stats?.totalOrders ?? 0}
+          icon={ShoppingBag}
+          loading={statsLoading}
+          hint={`${stats?.pendingOrders ?? 0} pending`}
+        />
+        <StatCard
+          label="Products"
+          value={stats?.totalProducts ?? 0}
+          icon={Package}
+          loading={statsLoading}
+        />
+        <StatCard
+          label="Categories"
+          value={stats?.totalCategories ?? 0}
+          icon={FolderTree}
+          loading={statsLoading}
+        />
+        <StatCard
+          label="Customers"
+          value={stats?.totalUsers ?? 0}
+          icon={Users}
+          loading={statsLoading}
+        />
+      </div>
+
+      {/* Chart + Order status mix */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  Revenue — last 7 days
+                </CardTitle>
+                <CardDescription>Daily revenue (₹)</CardDescription>
               </div>
             </div>
-            <div style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "0.25rem" }}>{stat.value}</div>
-            <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>{stat.title}</div>
-          </motion.div>
-        ))}
-      </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              {statsLoading ? (
+                <Skeleton className="h-full w-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: -10 }}>
+                    <defs>
+                      <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                      formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, "Revenue"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenueRupees"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#rev)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Additional Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem", marginBottom: "2.5rem" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: "1rem",
-            padding: "1.5rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-            <TrendingUp size={20} style={{ color: "var(--primary)" }} />
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>Average Order Value</h3>
-          </div>
-          <div style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "0.25rem" }}>
-            ₹{(avgOrderValue / 100).toFixed(2)}
-          </div>
-          <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
-            Per order average
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: "1rem",
-            padding: "1.5rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-            <Users size={20} style={{ color: "var(--primary)" }} />
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>Pending Payments</h3>
-          </div>
-          <div style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "0.25rem" }}>
-            {pendingPayments.length}
-          </div>
-          <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
-            Awaiting verification
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Recent Orders */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.6 }}
-        style={{
-          background: "var(--card)",
-          border: "1px solid var(--border)",
-          borderRadius: "1rem",
-          padding: "1.5rem",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h3 style={{ fontSize: "1.25rem", fontWeight: 600, margin: 0 }}>Recent Orders</h3>
-          <span style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
-            Last 5 orders
-          </span>
-        </div>
-
-        {orders.slice(0, 5).length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem", color: "var(--muted-foreground)" }}>
-            <Package size={48} style={{ margin: "0 auto 1rem", opacity: 0.4 }} />
-            <p>No orders yet</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {orders.slice(0, 5).map((order) => (
-              <div
-                key={order.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "1rem",
-                  background: "var(--background)",
-                  borderRadius: "0.75rem",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <div style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "8px",
-                  background: "var(--primary)15",
-                  color: "var(--primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                }}>
-                  #{order.id}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: "0.95rem" }}>
-                    {(order as any).user?.name || "Unknown"}
-                  </p>
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted-foreground)" }}>
-                    {(order as any).user?.email || "No email"}
-                  </p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem" }}>
-                    ₹{(order.totalAmount / 100).toFixed(2)}
-                  </p>
-                  <span style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    padding: "0.15rem 0.4rem",
-                    borderRadius: "99px",
-                    background: order.status === "DELIVERED" ? "#10b98122" : order.status === "PENDING" ? "#f59e0b22" : "#3b82f622",
-                    color: order.status === "DELIVERED" ? "#10b981" : order.status === "PENDING" ? "#f59e0b" : "#3b82f6",
-                  }}>
-                    {order.status}
-                  </span>
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              Order Status
+            </CardTitle>
+            <CardDescription>Live distribution</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {([
+                  ["Pending", stats?.pendingOrders ?? 0, "PENDING"],
+                  ["Paid", stats?.paidOrders ?? 0, "PAID"],
+                  ["Shipped", stats?.shippedOrders ?? 0, "SHIPPED"],
+                  ["Delivered", stats?.deliveredOrders ?? 0, "DELIVERED"],
+                  ["Cancelled", stats?.cancelledOrders ?? 0, "CANCELLED"],
+                ] as const).map(([label, count, key]) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between rounded-md border bg-background px-3 py-2"
+                  >
+                    <span
+                      className={cn(
+                        "text-xs font-semibold px-2 py-0.5 rounded-full border",
+                        STATUS_VARIANT[key as Order["status"]]
+                      )}
+                    >
+                      {label}
+                    </span>
+                    <span className="text-sm font-semibold">{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent orders */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Recent Orders</CardTitle>
+            <CardDescription>Latest customer activity</CardDescription>
           </div>
-        )}
-      </motion.div>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/admin/orders" className="flex items-center gap-1">
+              View all <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead className="hidden md:table-cell">Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ordersLoading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={5}>
+                      <Skeleton className="h-6 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!ordersLoading && recentOrders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No orders yet.
+                  </TableCell>
+                </TableRow>
+              )}
+              {!ordersLoading &&
+                recentOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">#{order.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{order.user?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {order.user?.email ?? "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                      {order.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString("en-IN")
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn("border", STATUS_VARIANT[order.status])}
+                      >
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {formatINR(order.totalAmount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };

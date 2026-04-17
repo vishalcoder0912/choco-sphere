@@ -13,6 +13,7 @@ export interface SessionPayload {
 export interface Category {
   id: number;
   name: string;
+  createdAt?: string;
 }
 
 export interface Product {
@@ -23,6 +24,7 @@ export interface Product {
   image: string;
   categoryId: number;
   category: Category;
+  createdAt?: string;
 }
 
 export interface OrderItem {
@@ -31,6 +33,13 @@ export interface OrderItem {
   productId: number;
   quantity: number;
   product: Product;
+}
+
+export interface OrderUserSummary {
+  id: number;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
 }
 
 export interface Order {
@@ -42,7 +51,30 @@ export interface Order {
   paymentMethod?: string;
   paymentDetails?: any;
   items: OrderItem[];
+  user?: OrderUserSummary;
   createdAt?: string;
+}
+
+export interface AdminStats {
+  totalRevenue: number;
+  totalOrders: number;
+  totalProducts: number;
+  totalCategories: number;
+  totalUsers: number;
+  pendingOrders: number;
+  paidOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  trend: Array<{ date: string; revenue: number; orders: number }>;
+}
+
+export interface ProductInput {
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  categoryId: number;
 }
 
 interface ApiResponse<T> {
@@ -60,13 +92,8 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (options.token) {
-    headers.Authorization = `Bearer ${options.token}`;
-  }
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (options.token) headers.Authorization = `Bearer ${options.token}`;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
@@ -75,24 +102,28 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   });
 
   const payload = (await response.json().catch(() => null)) as ApiResponse<T> | null;
-
   if (!response.ok) {
     throw new Error(payload?.message ?? "Request failed");
   }
-
   return payload?.data as T;
 }
 
 export const apiClient = {
   baseUrl: API_BASE_URL,
+
+  // Auth
   register: (body: { name: string; email: string; password: string }) =>
     request<SessionPayload>("/auth/register", { method: "POST", body }),
   login: (body: { email: string; password: string }) =>
     request<SessionPayload>("/auth/login", { method: "POST", body }),
   getCurrentUser: (token: string) => request<ApiUser>("/auth/me", { token }),
+
+  // Public
   getProducts: () => request<Product[]>("/products"),
   getProduct: (id: number) => request<Product>(`/products/${id}`),
   getCategories: () => request<Category[]>("/categories"),
+
+  // Customer orders
   createOrder: (
     token: string,
     items: Array<{ productId: number; quantity: number }>,
@@ -107,12 +138,41 @@ export const apiClient = {
     }),
   getOrdersByUser: (userId: number, token: string) =>
     request<Order[]>(`/orders/${userId}`, { token }),
-  
-  // Admin Operations
-  getAllOrdersAsAdmin: (token: string) => 
-    request<Order[]>("/admin/orders", { token }),
-  updateOrderStatus: (token: string, orderId: number, status: string) =>
-    request<Order>(`/admin/orders/${orderId}`, { method: "PATCH", token, body: { status } }),
-  createProductAsAdmin: (token: string, body: Omit<Product, "id" | "category">) =>
+
+  // Admin: dashboard
+  adminGetStats: (token: string) => request<AdminStats>("/admin/stats", { token }),
+
+  // Admin: orders
+  adminGetOrders: (token: string) => request<Order[]>("/admin/orders", { token }),
+  adminUpdateOrderStatus: (token: string, orderId: number, status: string) =>
+    request<Order>(`/admin/orders/${orderId}`, {
+      method: "PATCH",
+      token,
+      body: { status },
+    }),
+  adminDeleteOrder: (token: string, orderId: number) =>
+    request<void>(`/admin/orders/${orderId}`, { method: "DELETE", token }),
+
+  // Admin: products
+  adminGetProducts: (token: string) => request<Product[]>("/admin/products", { token }),
+  adminCreateProduct: (token: string, body: ProductInput) =>
     request<Product>("/admin/products", { method: "POST", token, body }),
+  adminUpdateProduct: (token: string, id: number, body: Partial<ProductInput>) =>
+    request<Product>(`/admin/products/${id}`, { method: "PATCH", token, body }),
+  adminDeleteProduct: (token: string, id: number) =>
+    request<void>(`/admin/products/${id}`, { method: "DELETE", token }),
+
+  // Admin: categories
+  adminGetCategories: (token: string) =>
+    request<Category[]>("/admin/categories", { token }),
+  adminCreateCategory: (token: string, name: string) =>
+    request<Category>("/admin/categories", { method: "POST", token, body: { name } }),
+  adminUpdateCategory: (token: string, id: number, name: string) =>
+    request<Category>(`/admin/categories/${id}`, {
+      method: "PATCH",
+      token,
+      body: { name },
+    }),
+  adminDeleteCategory: (token: string, id: number) =>
+    request<void>(`/admin/categories/${id}`, { method: "DELETE", token }),
 };

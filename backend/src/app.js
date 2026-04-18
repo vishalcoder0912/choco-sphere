@@ -12,23 +12,26 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:58017",
-  "https://frontend-livid-six-34.vercel.app"
-];
+  "https://frontend-livid-six-34.vercel.app",
+  env.frontendUrl,
+  env.frontendUrl?.replace("https://", "http://"),
+  env.frontendUrl?.replace("http://", "https://"),
+].filter(Boolean);
 
 /* =========================
    ✅ CORS CONFIG (FIXED)
 ========================= */
 app.use(cors({
   origin: (origin, callback) => {
-    // allow server-to-server / postman
+    if (env.nodeEnv === "development") {
+      return callback(null, true);
+    }
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-
     console.log("❌ Blocked by CORS:", origin);
-    return callback(new Error("Not allowed by CORS"));
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],

@@ -12,7 +12,6 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:58017",
-  "https://frontend-livid-six-34.vercel.app",
   env.frontendUrl,
   env.frontendUrl?.replace("https://", "http://"),
   env.frontendUrl?.replace("http://", "https://"),

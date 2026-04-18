@@ -1,4 +1,4 @@
-import { createOrder, getOrdersByUserId, updateOrderStatus } from "../services/order.service.js";
+import { createOrder, getOrdersByUserId, updateOrderStatus as updateStatus } from "../services/order.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { parseNumericId } from "../utils/parseNumericId.js";
@@ -44,7 +44,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid status value");
   }
 
-  const order = await updateOrderStatus(orderId, status);
+  const order = await updateStatus(orderId, status);
 
   res.status(200).json({
     success: true,

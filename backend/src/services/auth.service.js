@@ -13,6 +13,8 @@ const publicUserSelect = {
 };
 
 export const registerUser = async ({ name, email, password }) => {
+  console.log("AUTH SERVICE - received:", { name, email, password });
+  
   if (!name?.trim() || !email?.trim() || !password?.trim()) {
     throw new ApiError(400, "Name, email, and password are required");
   }

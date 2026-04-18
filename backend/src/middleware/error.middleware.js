@@ -5,6 +5,8 @@ export const notFoundHandler = (req, res, next) => {
 };
 
 export const errorHandler = (error, req, res, next) => {
+  console.error("ERROR HANDLER:", error);
+  
   if (res.headersSent) {
     return next(error);
   }
@@ -34,8 +36,11 @@ export const errorHandler = (error, req, res, next) => {
   const statusCode = error instanceof ApiError ? error.statusCode : 500;
   const message = error instanceof ApiError ? error.message : "Internal server error";
 
+  console.error("FULL ERROR:", error.stack);
+  
   return res.status(statusCode).json({
     success: false,
     message,
+    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
   });
 };

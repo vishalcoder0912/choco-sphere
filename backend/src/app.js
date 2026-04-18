@@ -6,50 +6,67 @@ import apiRoutes from "./routes/index.js";
 
 const app = express();
 
+/* =========================
+   ✅ ALLOWED ORIGINS
+========================= */
 const allowedOrigins = [
-  ...(env.frontendUrl || "http://localhost:5173").split(","),
+  "http://localhost:5173",
   "http://127.0.0.1:58017",
-  "https://frontend-livid-six-34.vercel.app",
+  "https://frontend-livid-six-34.vercel.app"
 ];
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      // Check if origin is allowed or matches a pattern
-      const isAllowed = allowedOrigins.some(allowed => {
-        if (allowed === origin) return true;
-        // Support wildcard patterns like https://*.vercel.app
-        if (allowed.includes("*")) {
-          const pattern = allowed.replace("*", "[^]+");
-          const regex = new RegExp(`^${pattern}$`);
-          return regex.test(origin);
-        }
-        return false;
-      });
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  })
-);
-app.options("*", cors());
+
+/* =========================
+   ✅ CORS CONFIG (FIXED)
+========================= */
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow server-to-server / postman
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("❌ Blocked by CORS:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
+}));
+
+/* =========================
+   ✅ PRE-FLIGHT FIX (IMPORTANT)
+========================= */
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
+/* =========================
+   ✅ BODY PARSER
+========================= */
 app.use(express.json({ limit: "1mb" }));
 
-// Health check endpoint
+/* =========================
+   ✅ HEALTH CHECK
+========================= */
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
     message: "API is healthy",
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   });
 });
 
+/* =========================
+   ✅ ROUTES
+========================= */
 app.use("/api", apiRoutes);
+
+/* =========================
+   ✅ ERROR HANDLING
+========================= */
 app.use(notFoundHandler);
 app.use(errorHandler);
 

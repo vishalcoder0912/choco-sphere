@@ -1,4 +1,4 @@
-import { createOrder, getOrdersByUserId } from "../services/order.service.js";
+import { createOrder, getOrdersByUserId, updateOrderStatus } from "../services/order.service.js";
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { parseNumericId } from "../utils/parseNumericId.js";
@@ -32,5 +32,23 @@ export const getOrdersForUser = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: orders,
+  });
+});
+
+export const updateOrderStatus = asyncHandler(async (req, res) => {
+  const orderId = parseNumericId(req.params.id, "order");
+  const { status } = req.body;
+
+  const validStatuses = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
+  if (!validStatuses.includes(status)) {
+    throw new ApiError(400, "Invalid status value");
+  }
+
+  const order = await updateOrderStatus(orderId, status);
+
+  res.status(200).json({
+    success: true,
+    message: "Order status updated",
+    data: order,
   });
 });

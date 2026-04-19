@@ -5,7 +5,7 @@
     "install:frontend": "npm --prefix frontend install",
     "install:backend": "npm --prefix backend install",
     "dev": "npm run dev:backend & npm run dev:frontend",
-    "dev:frontend": "cd frontend && npm exec vite -- --host :: --port 8080",
+    "dev:frontend": "cd frontend && npm exec -- vite --host :: --port 8080",
     "dev:backend": "npm --prefix backend run dev",
     "build": "cd frontend && npm exec vite build",
     "build:dev": "cd frontend && npm exec vite build -- --mode development",

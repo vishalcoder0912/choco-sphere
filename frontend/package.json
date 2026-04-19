@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm exec -- vite",
+    "dev": "npm exec -- vite --host :: --port 8080",
     "build": "npm exec -- vite build",
     "build:dev": "npm exec -- vite build --mode development",
     "lint": "eslint .",

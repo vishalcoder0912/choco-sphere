@@ -93,7 +93,7 @@ export const ProductCard = ({ id, name, price, image, description, categoryName 
         )}
         <div className={styles.priceRow}>
           <span className={styles.price}>
-            ${(price / 100).toFixed(2)}
+            ₹{(price / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
       </div>

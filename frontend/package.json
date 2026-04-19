@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "dev": "npm exec -- vite",
+    "build": "npm exec -- vite build",
+    "build:dev": "npm exec -- vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm exec -- vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

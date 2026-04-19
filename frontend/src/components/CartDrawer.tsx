@@ -78,7 +78,7 @@ export const CartDrawer = ({
                     </div>
 
                     <div className={styles.itemBottom}>
-                      <span className={styles.price}>${(item.price / 100).toFixed(2)}</span>
+                      <span className={styles.price}>₹{item.price.toLocaleString("en-IN")}</span>
                       <div className={styles.quantityControls}>
                         <button
                           className={styles.iconButton}
@@ -107,7 +107,7 @@ export const CartDrawer = ({
         <div className={styles.footer}>
           <div className={styles.summaryRow}>
             <span>Subtotal</span>
-            <strong>${(total / 100).toFixed(2)}</strong>
+            <strong>₹{total.toLocaleString("en-IN")}</strong>
           </div>
           <p className={styles.footerNote}>Taxes and shipping are calculated after order confirmation.</p>
 

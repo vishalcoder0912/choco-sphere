@@ -7,6 +7,8 @@
     "dev": "npm run dev:backend & npm run dev:frontend",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:dev": "npm --prefix frontend run build:dev",
     "build:frontend": "npm --prefix frontend run build",
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "prisma:migrate": "npm --prefix backend run prisma:migrate",

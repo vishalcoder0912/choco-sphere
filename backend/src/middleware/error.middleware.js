@@ -5,7 +5,17 @@ export const notFoundHandler = (req, res, next) => {
 };
 
 export const errorHandler = (error, req, res, next) => {
-  console.error("ERROR HANDLER:", error);
+  console.error("========== ERROR HANDLER ==========");
+  console.error("Timestamp:", new Date().toISOString());
+  console.error("Method:", req.method);
+  console.error("URL:", req.originalUrl);
+  console.error("Error name:", error.name);
+  console.error("Error message:", error.message);
+  console.error("Error code:", error.code);
+  if (error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
+  console.error("==================================");
   
   if (res.headersSent) {
     return next(error);
@@ -15,7 +25,7 @@ export const errorHandler = (error, req, res, next) => {
     return res.status(409).json({
       success: false,
       message: "A unique field already exists with this value",
-      details: error.meta,
+      error: process.env.NODE_ENV === "development" ? error.meta : undefined,
     });
   }
 
@@ -33,14 +43,20 @@ export const errorHandler = (error, req, res, next) => {
     });
   }
 
-  const statusCode = error instanceof ApiError ? error.statusCode : 500;
-  const message = error instanceof ApiError ? error.message : "Internal server error";
+  if (error.code === "P2000") {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid value for field",
+      details: error.meta,
+    });
+  }
 
-  console.error("FULL ERROR:", error.stack);
-  
+  const statusCode = error instanceof ApiError ? error.statusCode : 500;
+  const message = error instanceof ApiError ? error.message : "An unexpected error occurred while processing your request";
+
   return res.status(statusCode).json({
     success: false,
     message,
-    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
   });
 };

@@ -208,3 +208,22 @@ button {
     background-position: -200% 0;
   }
 }
+
+/* Admin Theme - Scoped to admin routes only */
+.admin-theme {
+  min-height: 100%;
+  background: #0A0A0A;
+}
+
+.admin-theme .admin-theme-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.admin-theme .admin-theme-card:hover {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.2);
+}

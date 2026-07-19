@@ -23,7 +23,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Index />} />
@@ -36,6 +36,7 @@ const App = () => (
           {/* Admin section uses its own chrome (no public Layout) */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />

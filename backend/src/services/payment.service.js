@@ -20,9 +20,10 @@ export const createPaymentReceipt = async (orderId, upiId, amount) => {
   }
 
   const merchantName = "ChocoVerse";
-  const transactionNote = `Payment for Order ${order.orderNumber}`;
+  const orderRef = order.orderNumber || `ORD-${order.id}`;
+  const transactionNote = `Payment for Order ${orderRef}`;
   
-  const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${(amount / 100).toFixed(2)}&cu=INR&tn=${encodeURIComponent(transactionNote)}&mref=${order.orderNumber}`;
+  const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${(amount / 100).toFixed(2)}&cu=INR&tn=${encodeURIComponent(transactionNote)}&mref=${orderRef}`;
 
   const qrCodeData = await QRCode.toDataURL(upiUrl, {
     width: 300,
@@ -55,8 +56,10 @@ export const createPaymentReceipt = async (orderId, upiId, amount) => {
 };
 
 export const updatePaymentReceipt = async (orderId, data) => {
+  const numericOrderId = typeof orderId === "string" ? parseInt(orderId) : orderId;
+
   const receipt = await prisma.paymentReceipt.findUnique({
-    where: { orderId }
+    where: { orderId: numericOrderId }
   });
 
   if (!receipt) {
@@ -64,7 +67,7 @@ export const updatePaymentReceipt = async (orderId, data) => {
   }
 
   return await prisma.paymentReceipt.update({
-    where: { orderId },
+    where: { orderId: numericOrderId },
     data: {
       ...data,
       paidAt: data.status === "COMPLETED" ? new Date() : undefined
@@ -100,13 +103,7 @@ export const verifyPayment = async (orderId, adminUserId) => {
     data: { status: "PAID" }
   });
 
-  await createNotification(
-    receipt.order.userId,
-    "PAYMENT_VERIFIED",
-    "Payment Verified!",
-    `Your payment of ₹${(receipt.amount / 100).toFixed(2)} for order ${receipt.order.orderNumber} has been verified.`,
-    { orderId, receiptId: receipt.id }
-  );
+  console.log(`[PAYMENT] Payment verified for order ${orderId} by admin ${adminUserId}`);
 
   return updatedReceipt;
 };
@@ -135,52 +132,9 @@ export const rejectPayment = async (orderId, adminUserId, reason) => {
     data: { status: "CANCELLED" }
   });
 
-  await createNotification(
-    receipt.order.userId,
-    "PAYMENT_REJECTED",
-    "Payment Rejected",
-    `Your payment for order ${receipt.order.orderNumber} was rejected. Reason: ${reason}`,
-    { orderId, receiptId: receipt.id, reason }
-  );
+  console.log(`[PAYMENT] Payment rejected for order ${orderId}. Reason: ${reason}`);
 
   return updatedReceipt;
-};
-
-export const createNotification = async (userId, type, title, message, data = null) => {
-  return await prisma.notification.create({
-    data: {
-      userId,
-      type,
-      title,
-      message,
-      data
-    }
-  });
-};
-
-export const getNotifications = async (userId, unreadOnly = false) => {
-  return await prisma.notification.findMany({
-    where: {
-      userId,
-      ...(unreadOnly ? { isRead: false } : {})
-    },
-    orderBy: { createdAt: "desc" },
-    take: 50
-  });
-};
-
-export const markNotificationRead = async (notificationId, userId) => {
-  return await prisma.notification.updateMany({
-    where: { id: notificationId, userId },
-    data: { isRead: true }
-  });
-};
-
-export const markAllNotificationsRead = async (userId) => {
-  return await prisma.notification.updateMany({
-    where: { userId, isRead: false },
-    data: { isRead: true }
-  });
 };
 
 export const getPendingPayments = async () => {

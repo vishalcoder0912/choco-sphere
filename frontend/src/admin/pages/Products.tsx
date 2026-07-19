@@ -1,61 +1,15 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Package, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { apiClient, type Product, type ProductInput } from "@/lib/api";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-
-const formatINR = (cents: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
+import { formatINR } from "@/lib/utils";
 
 type FormState = {
   name: string;
   description: string;
-  price: string; // rupees as string
+  price: string;
   image: string;
   categoryId: string;
 };
@@ -184,259 +138,376 @@ const Products = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight">
-            Products
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-3xl md:text-4xl font-semibold" style={{ color: "#C9A84C", marginBottom: "0.5rem" }}>Products</h1>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             {products.length} product{products.length !== 1 ? "s" : ""} in catalog
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" /> New product
-        </Button>
+        <button
+          className="px-6 py-3 font-medium rounded-lg transition-all duration-200 min-h-[44px] flex items-center justify-center gap-2"
+          style={{ 
+            backgroundColor: "#C9A84C", 
+            color: "var(--bg-base)",
+            border: "none"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#E5C876";
+            e.currentTarget.style.transform = "scale(1.02)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#C9A84C";
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+          onClick={openCreate}
+        >
+          <Plus size={16} />
+          Add Product
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products…"
-              className="pl-9"
-            />
+      {/* Search Bar */}
+      <div className="w-full lg:max-w-md">
+        <div className="admin-search">
+          <Search className="search-icon" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products..."
+            className="admin-input"
+          />
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {isLoading &&
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="admin-product-card">
+              <div className="admin-product-image">
+                <div className="admin-skeleton" style={{ width: "100%", height: "100%" }} />
+              </div>
+              <div className="admin-product-info">
+                <div className="admin-skeleton" style={{ height: "16px", marginBottom: "8px" }} />
+                <div className="admin-skeleton" style={{ height: "12px", width: "60%" }} />
+              </div>
+            </div>
+          ))}
+        {!isLoading && filtered.length === 0 && (
+          <div className="col-span-full admin-empty">
+            <div className="admin-empty-icon">
+              <Package className="w-12 h-12" />
+            </div>
+            <p>No products found</p>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className="hidden md:table-cell">Category</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading &&
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={4}>
-                      <Skeleton className="h-10 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              {!isLoading && filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    No products found.
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading &&
-                filtered.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="w-12 h-12 rounded-md object-cover border"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium truncate max-w-[280px]">{p.name}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[280px]">
-                            {p.description}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="secondary">{p.category?.name ?? "—"}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatINR(p.price)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEdit(p)}
-                          aria-label="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleting(p)}
-                          aria-label="Delete"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Create/Edit dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit product" : "Create product"}</DialogTitle>
-            <DialogDescription>
-              {editing ? "Update product details." : "Add a new product to the catalog."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Belgian Dark Box"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="A short product description…"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  placeholder="2999"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select
-                  value={form.categoryId}
-                  onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.length === 0 && (
-                      <div className="px-3 py-2 text-xs text-muted-foreground">
-                        No categories — create one first.
-                      </div>
-                    )}
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="image">Image URL</Label>
-              <Input
-                id="image"
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                placeholder="https://…"
-                required
-              />
-              {form.image && (
-                <div className="mt-2 rounded-md border p-2 bg-muted/30">
+        )}
+        {!isLoading &&
+          filtered.map((p) => (
+            <div 
+              key={p.id} 
+              className="admin-product-card"
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid rgba(201,168,76,0.15)",
+                borderRadius: "14px",
+                overflow: "hidden",
+                transition: "all 0.2s ease",
+                transform: "scale(1)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";
+                e.currentTarget.style.boxShadow = "0 0 20px rgba(201,168,76,0.08)";
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(201,168,76,0.15)";
+                e.currentTarget.style.boxShadow = "";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              {/* Product Image */}
+              <div className="admin-product-image" style={{ 
+                height: "160px", 
+                background: "var(--bg-surface)",
+                position: "relative",
+                overflow: "hidden"
+              }}>
+                {p.image ? (
                   <img
-                    src={form.image}
-                    alt="preview"
-                    className="h-24 w-full object-contain"
+                    src={p.image}
+                    alt={p.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center"
+                    }}
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+                      // Show fallback icon
+                      const fallback = document.createElement('div');
+                      fallback.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted)"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>';
+                      fallback.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);';
+                      target.parentElement?.appendChild(fallback);
                     }}
                   />
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    color: "var(--text-muted)"
+                  }}>
+                    <Package size={48} />
+                  </div>
+                )}
+              </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
+              {/* Product Content */}
+              <div className="admin-product-info" style={{ padding: "1rem" }}>
+                <h3 
+                  className="admin-product-name" 
+                  style={{ 
+                    color: "var(--text-primary)", 
+                    fontWeight: "500", 
+                    fontSize: "0.875rem",
+                    marginBottom: "0.25rem",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {p.name}
+                </h3>
+                <p 
+                  className="admin-product-category" 
+                  style={{ 
+                    fontSize: "0.75rem", 
+                    color: "var(--text-muted)", 
+                    marginBottom: "0.75rem" 
+                  }}
+                >
+                  {p.category?.name || "—"}
+                </p>
+                <p 
+                  className="admin-product-price" 
+                  style={{ 
+                    fontSize: "1rem", 
+                    fontWeight: "600", 
+                    color: "#C9A84C",
+                    fontFamily: "'DM Mono', monospace",
+                    marginBottom: "1rem"
+                  }}
+                >
+                  {formatINR(p.price)}
+                </p>
+                
+                {/* Action Buttons */}
+                <div className="admin-product-actions" style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    className="admin-btn admin-btn-ghost admin-btn-sm"
+                    style={{
+                      flex: 1,
+                      borderColor: "#C9A84C",
+                      color: "#C9A84C",
+                      fontSize: "0.75rem",
+                      minHeight: "36px"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(201,168,76,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                    onClick={() => openEdit(p)}
+                  >
+                    <Pencil size={12} style={{ marginRight: "0.25rem" }} />
+                    Edit
+                  </button>
+                  <button
+                    className="admin-btn admin-btn-ghost admin-btn-sm"
+                    style={{
+                      flex: 1,
+                      borderColor: "rgba(192,57,43,0.3)",
+                      color: "#F87171",
+                      fontSize: "0.75rem",
+                      minHeight: "36px"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(192,57,43,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                    onClick={() => setDeleting(p)}
+                  >
+                    <Trash2 size={12} style={{ marginRight: "0.25rem" }} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+      </div>
+
+      {dialogOpen && (
+        <div className="admin-modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) setDialogOpen(false);
+        }}>
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h2 className="admin-modal-title">
+                {editing ? "Edit Product" : "Add Product"}
+              </h2>
+              <button className="admin-modal-close" onClick={() => setDialogOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="admin-modal-body">
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Name</label>
+                  <input
+                    className="admin-input"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Belgian Dark Box"
+                    required
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Description</label>
+                  <textarea
+                    className="admin-textarea"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="A short product description..."
+                    required
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">Price (₹)</label>
+                    <input
+                      className="admin-input"
+                      type="number"
+                      min="1"
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      placeholder="2999"
+                      required
+                    />
+                  </div>
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">Category</label>
+                    <div className="admin-select">
+                      <select
+                        value={form.categoryId}
+                        onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                        required
+                      >
+                        <option value="">Select category</option>
+                        {categories.map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Image URL</label>
+                  <input
+                    className="admin-input"
+                    value={form.image}
+                    onChange={(e) => setForm({ ...form, image: e.target.value })}
+                    placeholder="https://..."
+                    required
+                  />
+                  {form.image && (
+                    <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden" }}>
+                      <img
+                        src={form.image}
+                        alt="preview"
+                        style={{ width: "100%", height: 100, objectFit: "contain" }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="admin-modal-footer">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-ghost"
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn-primary"
+                  disabled={create.isPending || update.isPending}
+                >
+                  {editing
+                    ? update.isPending
+                      ? "Saving..."
+                      : "Save Changes"
+                    : create.isPending
+                    ? "Creating..."
+                    : "Create Product"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {deleting && (
+        <div className="admin-modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) setDeleting(null);
+        }}>
+          <div className="admin-modal" style={{ maxWidth: 400 }}>
+            <div className="admin-modal-header">
+              <h2 className="admin-modal-title">Delete Product?</h2>
+              <button className="admin-modal-close" onClick={() => setDeleting(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="admin-modal-body">
+              <p style={{ opacity: 0.8 }}>
+                Are you sure you want to delete "{deleting.name}"? This action cannot be undone.
+              </p>
+            </div>
+            <div className="admin-modal-footer">
+              <button
+                className="admin-btn admin-btn-ghost"
+                onClick={() => setDeleting(null)}
               >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={create.isPending || update.isPending}>
-                {editing
-                  ? update.isPending
-                    ? "Saving…"
-                    : "Save changes"
-                  : create.isPending
-                  ? "Creating…"
-                  : "Create product"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete confirm */}
-      <AlertDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{deleting?.name}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the product from the catalog. Products referenced by past orders cannot be deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleting && remove.mutate(deleting.id)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              </button>
+              <button
+                className="admin-btn admin-btn-danger"
+                onClick={() => deleting && remove.mutate(deleting.id)}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

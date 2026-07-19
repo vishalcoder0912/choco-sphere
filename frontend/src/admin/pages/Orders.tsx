@@ -1,55 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Trash2, Eye, RefreshCw } from "lucide-react";
+import { Search, Eye, RefreshCw, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { apiClient, type Order } from "@/lib/api";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-
-const formatINR = (cents: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
+import { formatINR } from "@/lib/utils";
 
 const STATUSES: Order["status"][] = [
   "PENDING",
@@ -59,12 +14,20 @@ const STATUSES: Order["status"][] = [
   "CANCELLED",
 ];
 
-const STATUS_VARIANT: Record<Order["status"], string> = {
-  PENDING: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30 dark:text-yellow-400",
-  PAID: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
-  SHIPPED: "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400",
-  DELIVERED: "bg-violet-500/15 text-violet-600 border-violet-500/30 dark:text-violet-400",
-  CANCELLED: "bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400",
+const STATUS_FILTERS: Array<"ALL" | Order["status"]> = [
+  "ALL",
+  "PENDING",
+  "PAID",
+  "SHIPPED",
+  "DELIVERED",
+];
+
+const STATUS_STYLES: Record<Order["status"], { bg: string; text: string; border: string }> = {
+  PENDING: { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
+  PAID: { bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
+  SHIPPED: { bg: "bg-violet-500/20", text: "text-violet-400", border: "border-violet-500/30" },
+  DELIVERED: { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  CANCELLED: { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500/30" },
 };
 
 const Orders = () => {
@@ -73,7 +36,6 @@ const Orders = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"ALL" | Order["status"]>("ALL");
   const [viewing, setViewing] = useState<Order | null>(null);
-  const [deleting, setDeleting] = useState<Order | null>(null);
 
   const {
     data: orders = [],
@@ -97,17 +59,6 @@ const Orders = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const removeOrder = useMutation({
-    mutationFn: (id: number) => apiClient.adminDeleteOrder(token as string, id),
-    onSuccess: () => {
-      toast.success("Order deleted");
-      setDeleting(null);
-      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const filtered = useMemo(
     () =>
       orders.filter((o) => {
@@ -124,279 +75,292 @@ const Orders = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight">
-            Orders
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {orders.length} total · {filtered.length} shown
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
+    <div className="admin-content">
+      {/* Header */}
+      <div className="admin-page-header">
+        <h1 className="admin-page-title">Orders</h1>
+        <p className="admin-page-subtitle">
+          {orders.length} total · {filtered.length} shown
+        </p>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="admin-filter-tabs">
+        {STATUS_FILTERS.map((s) => (
+          <button
+            key={s}
+            className={`admin-filter-tab ${filter === s ? "active" : ""}`}
+            onClick={() => setFilter(s)}
+          >
+            {s}
+          </button>
+        ))}
+        <button
+          className="admin-btn admin-btn-ghost admin-btn-sm"
           onClick={() => refetch()}
           disabled={isFetching}
         >
-          <RefreshCw className={cn("w-4 h-4 mr-2", isFetching && "animate-spin")} />
+          <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
           Refresh
-        </Button>
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="p-4 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by order ID, name, or email…"
-              className="pl-9"
-            />
+      {/* Search */}
+      <div className="admin-mb-6">
+        <div className="admin-search">
+          <Search className="search-icon" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by order ID, name, or email..."
+            className="admin-input"
+          />
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="admin-desktop-only">
+        <div className="admin-table-card">
+          <div className="admin-table-header">
+            <h3 className="admin-table-title">All Orders</h3>
           </div>
-          <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <SelectTrigger className="md:w-48">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+          <div className="overflow-x-auto">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th className="admin-hidden-mobile">Date</th>
+                  <th className="admin-hidden-mobile">Items</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Total</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading &&
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={7}>
+                        <div className="admin-skeleton" style={{ height: 48 }} />
+                      </td>
+                    </tr>
+                  ))}
+                {!isLoading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="admin-text-center py-8" style={{ color: "var(--text-muted)" }}>
+                      No orders match your filters
+                    </td>
+                  </tr>
+                )}
+                {!isLoading &&
+                  filtered.map((order) => {
+                    return (
+                      <tr key={order.id}>
+                        <td className="font-mono">
+                          <span style={{ 
+                            display: "inline-flex", 
+                            alignItems: "center", 
+                            justifyContent: "center", 
+                            width: "32px", 
+                            height: "32px", 
+                            borderRadius: "8px", 
+                            fontSize: "11px", 
+                            fontWeight: "bold", 
+                            background: "var(--gold-dim)", 
+                            color: "var(--gold)" 
+                          }}>#{order.id}</span>
+                        </td>
+                        <td>
+                          <div style={{ color: "var(--text-primary)", fontWeight: "500" }}>{order.user?.name || "—"}</div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{order.user?.email || "—"}</div>
+                        </td>
+                        <td className="admin-hidden-mobile" style={{ color: "var(--text-muted)" }}>
+                          {order.createdAt
+                            ? new Date(order.createdAt).toLocaleDateString("en-IN")
+                            : "—"}
+                        </td>
+                        <td className="admin-hidden-mobile" style={{ color: "var(--text-muted)" }}>{order.items.length}</td>
+                        <td>
+                          <span className={`admin-status-badge ${order.status.toLowerCase()}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "right", fontFamily: "'DM Mono', monospace", color: "var(--gold)" }}>
+                          {formatINR(order.totalAmount)}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            className="admin-btn admin-btn-ghost admin-btn-icon"
+                            onClick={() => setViewing(order)}
+                            aria-label="View order"
+                          >
+                            <Eye size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="hidden sm:table-cell">Items</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={7}>
-                      <Skeleton className="h-6 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              {!isLoading && filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No orders match your filters.
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading &&
-                filtered.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">#{order.id}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{order.user?.name ?? "—"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {order.user?.email ?? "—"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                      {order.createdAt
-                        ? new Date(order.createdAt).toLocaleDateString("en-IN")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm">
-                      {order.items.length}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={order.status}
-                        onValueChange={(v) =>
-                          updateStatus.mutate({ id: order.id, status: v })
-                        }
-                      >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUSES.map((s) => (
-                            <SelectItem key={s} value={s} className="text-xs">
-                              <Badge
-                                variant="outline"
-                                className={cn("border mr-1", STATUS_VARIANT[s])}
-                              >
-                                {s}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatINR(order.totalAmount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setViewing(order)}
-                          aria-label="View order"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleting(order)}
-                          aria-label="Delete order"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* View order sheet */}
-      <Sheet open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          {viewing && (
-            <>
-              <SheetHeader>
-                <SheetTitle>Order #{viewing.id}</SheetTitle>
-                <SheetDescription>
-                  Placed{" "}
-                  {viewing.createdAt
-                    ? new Date(viewing.createdAt).toLocaleString("en-IN")
-                    : "—"}
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="mt-6 space-y-5">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                    Customer
-                  </p>
-                  <p className="font-medium">{viewing.user?.name ?? "—"}</p>
-                  <p className="text-sm text-muted-foreground">{viewing.user?.email}</p>
+      {/* Mobile Card View */}
+      <div className="admin-mobile-only admin-mobile-cards">
+        {isLoading &&
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="admin-skeleton" style={{ height: 120, borderRadius: 12 }} />
+          ))}
+        {!isLoading && filtered.length === 0 && (
+          <div className="admin-empty">
+            <div className="admin-empty-icon">📋</div>
+            <p>No orders match your filters</p>
+          </div>
+        )}
+        {!isLoading &&
+          filtered.map((order) => (
+            <div key={order.id} className="admin-mobile-card">
+              <div className="admin-mobile-card-header">
+                <span className="admin-mobile-card-title font-mono" style={{ 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  width: "32px", 
+                  height: "32px", 
+                  borderRadius: "8px", 
+                  fontSize: "11px", 
+                  fontWeight: "bold", 
+                  background: "var(--gold-dim)", 
+                  color: "var(--gold)" 
+                }}>#{order.id}</span>
+                <span className="font-mono" style={{ color: "var(--gold)" }}>
+                  {formatINR(order.totalAmount)}
+                </span>
+              </div>
+              <div className="admin-mobile-card-content">
+                <div className="admin-mobile-card-row">
+                  <span className="admin-mobile-card-label">Customer</span>
+                  <span className="admin-mobile-card-value">{order.user?.name ?? "Guest"}</span>
                 </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                    Items
-                  </p>
-                  <div className="space-y-2">
-                    {viewing.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 rounded-md border p-2"
-                      >
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-12 h-12 rounded object-cover"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {item.product.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatINR(item.product.price)} × {item.quantity}
-                          </p>
-                        </div>
-                        <p className="text-sm font-semibold">
-                          {formatINR(item.product.price * item.quantity)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="admin-mobile-card-row">
+                  <span className="admin-mobile-card-label">Email</span>
+                  <span className="admin-mobile-card-value">{order.user?.email ?? "—"}</span>
                 </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                      Shipping address
-                    </p>
-                    <p className="text-sm">{viewing.shippingAddress || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                      Payment
-                    </p>
-                    <p className="text-sm">
-                      {viewing.paymentMethod || "—"}
-                      {viewing.paymentDetails?.upiId && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {viewing.paymentDetails.upiId}
-                        </span>
-                      )}
-                      {viewing.paymentDetails?.last4 && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · ****{viewing.paymentDetails.last4}
-                        </span>
-                      )}
-                    </p>
-                  </div>
+                <div className="admin-mobile-card-row">
+                  <span className="admin-mobile-card-label">Date</span>
+                  <span className="admin-mobile-card-value">
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleDateString("en-IN")
+                      : "—"}
+                  </span>
                 </div>
-
-                <Separator />
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="text-xl font-semibold">
-                    {formatINR(viewing.totalAmount)}
+                <div className="admin-mobile-card-row">
+                  <span className="admin-mobile-card-label">Items</span>
+                  <span className="admin-mobile-card-value">{order.items.length}</span>
+                </div>
+                <div className="admin-mobile-card-row">
+                  <span className="admin-mobile-card-label">Status</span>
+                  <span className={`admin-status-badge ${order.status.toLowerCase()}`}>
+                    {order.status}
                   </span>
                 </div>
               </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+              <button
+                className="admin-btn admin-btn-ghost admin-btn-sm"
+                style={{ width: "100%", marginTop: "12px" }}
+                onClick={() => setViewing(order)}
+              >
+                <Eye size={14} />
+                View Details
+              </button>
+            </div>
+          ))}
+      </div>
 
-      {/* Delete confirmation */}
-      <AlertDialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete order #{deleting?.id}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the order and all of its line items. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleting && removeOrder.mutate(deleting.id)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Order Details Modal */}
+      {viewing && (
+        <div className="admin-modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) setViewing(null);
+        }}>
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h2 className="admin-modal-title">Order #{viewing.id}</h2>
+              <button className="admin-modal-close" onClick={() => setViewing(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
+                <label className="admin-form-label">Customer</label>
+                <div style={{ color: "var(--text-primary)", marginBottom: "4px" }}>{viewing.user?.name || "—"}</div>
+                <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{viewing.user?.email}</div>
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">Status</label>
+                <div className="admin-select">
+                  <select
+                    value={viewing.status}
+                    onChange={(e) =>
+                      updateStatus.mutate({
+                        id: viewing.id,
+                        status: e.target.value,
+                      })
+                    }
+                    className="admin-input"
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="admin-form-group">
+                <label className="admin-form-label">Items</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {viewing.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="admin-category-item"
+                      style={{ padding: "12px" }}
+                    >
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="w-12 h-12 rounded-md object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                      <div className="admin-category-details">
+                        <div className="admin-category-name">{item.product.name}</div>
+                        <div className="admin-category-count">Qty: {item.quantity} × {formatINR(item.product.price)}</div>
+                      </div>
+                      <div style={{ color: "var(--text-primary)", fontWeight: "bold", fontFamily: "'DM Mono', monospace" }}>
+                        {formatINR(item.product.price * item.quantity)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-form-group" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <span style={{ color: "var(--text-muted)" }}>Total</span>
+                <span style={{ fontSize: "20px", fontWeight: "bold", color: "var(--gold)", fontFamily: "'DM Mono', monospace" }}>
+                  {formatINR(viewing.totalAmount)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

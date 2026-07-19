@@ -165,13 +165,13 @@ export const apiClient = {
   // Admin: categories
   adminGetCategories: (token: string) =>
     request<Category[]>("/admin/categories", { token }),
-  adminCreateCategory: (token: string, name: string) =>
-    request<Category>("/admin/categories", { method: "POST", token, body: { name } }),
-  adminUpdateCategory: (token: string, id: number, name: string) =>
+  adminCreateCategory: (token: string, body: { name: string; description?: string }) =>
+    request<Category>("/admin/categories", { method: "POST", token, body }),
+  adminUpdateCategory: (token: string, id: number, body: { name: string; description?: string }) =>
     request<Category>(`/admin/categories/${id}`, {
       method: "PATCH",
       token,
-      body: { name },
+      body,
     }),
   adminDeleteCategory: (token: string, id: number) =>
     request<void>(`/admin/categories/${id}`, { method: "DELETE", token }),

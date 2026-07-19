@@ -9,6 +9,7 @@ import { useState } from "react";
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
+import { formatINR } from "@/lib/utils";
 
 const fallbackProducts: Product[] = [
   { id: 1, name: "Dark Truffle Collection", price: 2999, image: product1, description: "Handcrafted dark chocolate truffles with exotic flavors.", categoryId: 1, category: { id: 1, name: "Dark Chocolate" } },
@@ -137,7 +138,7 @@ const ProductDetails = () => {
             </span>
             <h1 style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.5rem 0", lineHeight: 1.2 }}>{product.name}</h1>
             <div style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--foreground)" }}>
-              ${(product.price / 100).toFixed(2)}
+              {formatINR(product.price)}
             </div>
           </div>
 

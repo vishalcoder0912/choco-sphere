@@ -8,6 +8,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { apiClient } from "@/lib/api";
+import { formatINR } from "@/lib/utils";
 
 type PaymentMethod = "CARD" | "UPI";
 
@@ -225,7 +226,7 @@ const Checkout = () => {
                       />
                     </div>
                     <p style={{ fontSize: "0.85rem", color: "var(--muted-foreground)", textAlign: "center", maxWidth: "320px" }}>
-                      Scan this QR code with any UPI app (GPay, PhonePe, Paytm) to pay <strong style={{ color: "var(--foreground)" }}>₹{(cartTotal / 100).toFixed(2)}</strong>
+                      Scan this QR code with any UPI app (GPay, PhonePe, Paytm) to pay <strong style={{ color: "var(--foreground)" }}>{formatINR(cartTotal)}</strong>
                     </p>
 
                     {/* Merchant UPI ID */}
@@ -290,7 +291,7 @@ const Checkout = () => {
                     <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", margin: 0 }}>Qty: {item.quantity}</p>
                   </div>
                   <span style={{ fontWeight: 600, fontSize: "0.9rem", flexShrink: 0 }}>
-                    ${((item.price * item.quantity) / 100).toFixed(2)}
+                    {formatINR(item.price * item.quantity)}
                   </span>
                 </div>
               ))}
@@ -298,18 +299,18 @@ const Checkout = () => {
 
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: "1rem", marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted-foreground)", fontSize: "0.9rem" }}>
-                <span>Subtotal</span><span>${(cartTotal / 100).toFixed(2)}</span>
+                <span>Subtotal</span><span>{formatINR(cartTotal)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted-foreground)", fontSize: "0.9rem" }}>
                 <span>Shipping</span><span>Free</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "1.15rem", marginTop: "0.5rem" }}>
                 <span>Total</span>
-                <span>${(cartTotal / 100).toFixed(2)}</span>
+                <span>{formatINR(cartTotal)}</span>
               </div>
               {paymentMethod === "UPI" && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--muted-foreground)", marginTop: "0.25rem" }}>
-                  <span>≈ INR</span><span>₹{(cartTotal / 100).toFixed(2)}</span>
+                  
                 </div>
               )}
             </div>

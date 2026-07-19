@@ -1,5 +1,6 @@
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
+import { formatINR } from "@/lib/utils";
 import styles from "./CartDrawer.module.css";
 
 interface CartDrawerProps {
@@ -78,7 +79,7 @@ export const CartDrawer = ({
                     </div>
 
                     <div className={styles.itemBottom}>
-                      <span className={styles.price}>₹{item.price.toLocaleString("en-IN")}</span>
+                      <span className={styles.price}>{formatINR(item.price)}</span>
                       <div className={styles.quantityControls}>
                         <button
                           className={styles.iconButton}
@@ -107,7 +108,7 @@ export const CartDrawer = ({
         <div className={styles.footer}>
           <div className={styles.summaryRow}>
             <span>Subtotal</span>
-            <strong>₹{total.toLocaleString("en-IN")}</strong>
+            <strong>{formatINR(total)}</strong>
           </div>
           <p className={styles.footerNote}>Taxes and shipping are calculated after order confirmation.</p>
 

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Package, Home, CreditCard, Smartphone, QrCode, Clock, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, type Order } from "@/lib/api";
+import { formatINR } from "@/lib/utils";
 import styles from "./Index.module.css";
 
 const OrderSuccess = () => {
@@ -119,14 +120,14 @@ const OrderSuccess = () => {
               {order.items.map((item) => (
                 <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0" }}>
                   <span style={{ fontSize: "0.9rem" }}>{item.product.name} x {item.quantity}</span>
-                  <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>₹{((item.price * item.quantity) / 100).toFixed(2)}</span>
+                  <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{formatINR(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "1rem", borderTop: "1px solid var(--border)", fontWeight: 700, fontSize: "1.1rem" }}>
               <span>Total</span>
-              <span>₹{(order.totalAmount / 100).toFixed(2)}</span>
+              <span>{formatINR(order.totalAmount)}</span>
             </div>
           </motion.div>
         )}

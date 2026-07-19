@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const main = async () => {
-  const adminPassword = await bcrypt.hash("Admin@123", 10);
+  const adminPassword = await bcrypt.hash("123456789", 10);
   const customerPassword = await bcrypt.hash("User@1234", 10);
 
   const darkCategory = await prisma.category.upsert({
@@ -77,7 +77,7 @@ const main = async () => {
   });
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@chocosphere.com" },
+    where: { email: "vishal.kumar@admin.com" },
     update: {
       name: "Store Admin",
       password: adminPassword,
@@ -85,7 +85,7 @@ const main = async () => {
     },
     create: {
       name: "Store Admin",
-      email: "admin@chocosphere.com",
+      email: "vishal.kumar@admin.com",
       password: adminPassword,
       role: "ADMIN",
     },
@@ -109,7 +109,7 @@ const main = async () => {
   // Skip order creation due to schema changes
 
   console.log("Seed completed");
-  console.log("Admin login: admin@chocosphere.com / Admin@123");
+  console.log("Admin login: vishal.kumar@admin.com / 123456789");
   console.log("Customer login: customer@chocosphere.com / User@1234");
   console.log(`Admin user id: ${admin.id}`);
 };

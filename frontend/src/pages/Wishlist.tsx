@@ -4,6 +4,7 @@ import { Heart, ShoppingBag, Trash2, ArrowLeft } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
 import { toast } from "sonner";
+import { formatINR } from "@/lib/utils";
 
 const Wishlist = () => {
   const { items: wishlistItems, removeItem, clearWishlist } = useWishlistStore();
@@ -209,7 +210,7 @@ const Wishlist = () => {
               )}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                 <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                  ₹{(item.price / 100).toFixed(2)}
+                  {formatINR(item.price)}
                 </span>
                 <button
                   onClick={() => handleAddToCart(item)}

@@ -1,5 +1,6 @@
 import { PackageCheck, RefreshCw } from "lucide-react";
 import type { Order } from "@/lib/api";
+import { formatINR } from "@/lib/utils";
 import styles from "./OrderHistory.module.css";
 
 interface OrderHistoryProps {
@@ -54,14 +55,14 @@ export const OrderHistory = ({ orders, loading, errorMessage, onRefresh }: Order
                   <span>
                     {item.product.name} x {item.quantity}
                   </span>
-                  <strong>${((item.product.price * item.quantity) / 100).toFixed(2)}</strong>
+                  <strong>{formatINR(item.product.price * item.quantity)}</strong>
                 </div>
               ))}
             </div>
 
             <div className={styles.totalRow}>
               <span>Total</span>
-              <strong>${(order.totalAmount / 100).toFixed(2)}</strong>
+              <strong>{formatINR(order.totalAmount)}</strong>
             </div>
           </article>
         ))}

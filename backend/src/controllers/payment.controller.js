@@ -8,7 +8,6 @@ import {
   getPendingPayments,
 } from "../services/payment.service.js";
 import { ApiError } from "../utils/apiError.js";
-import { parseNumericId } from "../utils/parseNumericId.js";
 
 export const getPaymentReceipt = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
@@ -66,6 +65,8 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     data: { status: "PAYMENT_PENDING" }
   });
 
+  const orderRef = order.orderNumber || `ORD-${order.id}`;
+
   res.status(200).json({
     success: true,
     message: "Payment initiated. Please complete UPI payment.",
@@ -74,7 +75,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
       qrCode: receipt.qrCodeData,
       amount: receipt.amount,
       upiId: receipt.upiId,
-      orderNumber: order.orderNumber,
+      orderNumber: orderRef,
       validFor: "15 minutes"
     }
   });
@@ -113,6 +114,8 @@ export const initiatePaymentGuest = asyncHandler(async (req, res) => {
     data: { status: "PAYMENT_PENDING" }
   });
 
+  const orderRef = order.orderNumber || `ORD-${order.id}`;
+
   res.status(200).json({
     success: true,
     message: "Payment initiated. Please complete UPI payment.",
@@ -122,7 +125,7 @@ export const initiatePaymentGuest = asyncHandler(async (req, res) => {
       qrCode: receipt.qrCodeData,
       amount: receipt.amount,
       upiId: receipt.upiId,
-      orderNumber: order.orderNumber,
+      orderNumber: orderRef,
       validFor: "15 minutes"
     }
   });
@@ -135,8 +138,10 @@ export const submitTransactionId = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Order ID and Transaction ID are required");
   }
 
+  const numericOrderId = parseInt(orderId);
+
   const receipt = await prisma.paymentReceipt.findUnique({
-    where: { orderId: parseInt(orderId) },
+    where: { orderId: numericOrderId },
     include: { order: true }
   });
 
@@ -148,18 +153,22 @@ export const submitTransactionId = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Payment already completed");
   }
 
-  await updatePaymentReceipt(orderId, {
+  await updatePaymentReceipt(numericOrderId, {
     transactionId,
     payerVpa,
     payerName,
     upiRefId: `UPI${Date.now()}`
   });
 
+  const existingDetails = (receipt.order.paymentDetails && typeof receipt.order.paymentDetails === "object")
+    ? receipt.order.paymentDetails
+    : {};
+
   await prisma.order.update({
-    where: { id: orderId },
+    where: { id: numericOrderId },
     data: { 
       paymentDetails: {
-        ...receipt.order.paymentDetails,
+        ...existingDetails,
         transactionId,
         payerVpa,
         payerName,
@@ -186,8 +195,10 @@ export const submitTransactionGuest = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Order ID and Transaction ID are required");
   }
 
+  const numericOrderId = parseInt(orderId);
+
   const receipt = await prisma.paymentReceipt.findUnique({
-    where: { orderId: parseInt(orderId) },
+    where: { orderId: numericOrderId },
     include: { order: true }
   });
 
@@ -199,19 +210,23 @@ export const submitTransactionGuest = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Payment already completed");
   }
 
-  await updatePaymentReceipt(orderId, {
+  await updatePaymentReceipt(numericOrderId, {
     transactionId,
     payerVpa,
     payerName,
     upiRefId: `UPI${Date.now()}`
   });
 
+  const existingDetails = (receipt.order.paymentDetails && typeof receipt.order.paymentDetails === "object")
+    ? receipt.order.paymentDetails
+    : {};
+
   await prisma.order.update({
-    where: { id: orderId },
+    where: { id: numericOrderId },
     data: { 
       status: "PAYMENT_PENDING",
       paymentDetails: {
-        ...receipt.order.paymentDetails,
+        ...existingDetails,
         transactionId,
         payerVpa,
         payerName,

@@ -14,6 +14,7 @@ enum Role {
 
 enum OrderStatus {
   PENDING
+  PAYMENT_PENDING
   PAID
   SHIPPED
   DELIVERED
@@ -53,17 +54,19 @@ model Product {
 }
 
 model Order {
-  id              Int         @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
+  orderNumber     String?          @unique
   userId          Int
   totalAmount     Int
-  status          OrderStatus @default(PENDING)
+  status          OrderStatus      @default(PENDING)
   shippingAddress String?
   paymentMethod   String?
   paymentDetails  Json?
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  paymentReceipt  PaymentReceipt?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model OrderItem {
@@ -76,4 +79,30 @@ model OrderItem {
   createdAt DateTime @default(now())
 
   @@unique([orderId, productId])
+}
+
+model UpiSettings {
+  id         Int      @id @default(autoincrement())
+  upiId      String   @unique
+  qrCodeData String?
+  updatedAt  DateTime @updatedAt
+}
+
+model PaymentReceipt {
+  id            Int       @id @default(autoincrement())
+  orderId       Int       @unique
+  upiId         String
+  transactionId String?
+  upiRefId      String?
+  payerVpa      String?
+  payerName     String?
+  amount        Int
+  qrCodeData    String
+  status        String    @default("PENDING")
+  paidAt        DateTime?
+  verifiedAt    DateTime?
+  verifiedBy    Int?
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

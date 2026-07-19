@@ -4,7 +4,7 @@
   "scripts": {
     "install:frontend": "npm --prefix frontend install",
     "install:backend": "npm --prefix backend install",
-    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev": "npx concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "build": "npm --prefix frontend run build",

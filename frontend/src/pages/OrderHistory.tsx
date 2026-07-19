@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Package, ChevronDown, ChevronUp, ArrowLeft, ShoppingBag, Calendar, MapPin, CreditCard, CheckCircle, Clock, XCircle } from "lucide-react";
 import { apiClient, type Order } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { formatINR } from "@/lib/utils";
 
 const OrderHistory = () => {
   const { user, token } = useAuthStore();
@@ -249,7 +250,7 @@ const OrderHistory = () => {
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "N/A"}
                     </span>
                     <span style={{ fontWeight: 600, color: "var(--foreground)" }}>
-                      ₹{(order.totalAmount / 100).toFixed(2)}
+                      {formatINR(order.totalAmount)}
                     </span>
                   </div>
                 </div>
@@ -303,11 +304,11 @@ const OrderHistory = () => {
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>{item.product.name}</div>
                           <div style={{ fontSize: "0.85rem", color: "var(--muted-foreground)" }}>
-                            Qty: {item.quantity} × ₹{(item.price / 100).toFixed(2)}
+                            Qty: {item.quantity} × {formatINR(item.price)}
                           </div>
                         </div>
                         <div style={{ fontWeight: 700 }}>
-                          ₹{((item.price * item.quantity) / 100).toFixed(2)}
+                          {formatINR(item.price * item.quantity)}
                         </div>
                       </div>
                     ))}
@@ -342,7 +343,7 @@ const OrderHistory = () => {
                       Total Amount
                     </h3>
                     <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--foreground)" }}>
-                      ₹{(order.totalAmount / 100).toFixed(2)}
+                      {formatINR(order.totalAmount)}
                     </p>
                   </div>
                 </div>

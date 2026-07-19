@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/cartStore";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatINR } from "@/lib/utils";
 import styles from "./ProductCard.module.css";
 
 interface ProductCardProps {
@@ -93,7 +94,7 @@ export const ProductCard = ({ id, name, price, image, description, categoryName 
         )}
         <div className={styles.priceRow}>
           <span className={styles.price}>
-            ₹{(price / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatINR(price)}
           </span>
         </div>
       </div>

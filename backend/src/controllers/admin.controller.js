@@ -162,6 +162,7 @@ export const getStats = asyncHandler(async (_req, res) => {
       totalCategories: categoriesCount,
       totalUsers: usersCount,
       pendingOrders: counts.PENDING ?? 0,
+      paymentPendingOrders: counts.PAYMENT_PENDING ?? 0,
       paidOrders: counts.PAID ?? 0,
       shippedOrders: counts.SHIPPED ?? 0,
       deliveredOrders: counts.DELIVERED ?? 0,
